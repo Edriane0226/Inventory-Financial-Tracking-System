@@ -72,8 +72,8 @@ class Auth extends BaseController
 
             $userModel = new UserModel();
             $user = $userModel->where('email', $this->request->getPost('email'))->first();
-
-            if ($user && password_verify($this->request->getPost('password'), $user['password'])) {
+            
+            if ($user && password_verify($this->request->getPost('password'), $user['password_hash'])) {
                 session()->set([
                     'user_id' => $user['id'],
                     'first_name' => $user['first_name'],
@@ -88,5 +88,27 @@ class Auth extends BaseController
         }
 
         return view('auth/login');
+    }
+
+    public function dashboard()
+    {
+        if (!session()->get('logged_in')) {
+            return redirect()->to('/login')->with('error', 'Please log in to access the dashboard.');
+        }
+
+        $userModel = new UserModel();
+        $roleModel = new RoleModel();
+
+        // $data = [
+            
+        // ];
+
+        return view('Reusables/menu') . view('auth/dashboard');
+    }
+
+    public function logout()
+    {
+        session()->destroy();
+        return redirect()->to('/login')->with('success', 'Logged out successfully.');
     }
 }

@@ -13,11 +13,11 @@ class Auth extends BaseController
     {
         helper('form');
 
-        // Only Allow Admin to Register New Users
+        // Only Allow Owner to Register New Users
         $roleModel = new RoleModel();
         $userModel = new UserModel();
         $currentUser = $userModel->getUserWithRole(session()->get('user_id'));
-        if ($currentUser['role_name'] !== 'Admin') {
+        if ($currentUser['role_name'] !== 'Owner') {
             return redirect()->to('/')->with('error', 'You are not authorized to access this page.');
         }
         
@@ -46,14 +46,14 @@ class Auth extends BaseController
                 'first_name' => $this->request->getPost('first_name'),
                 'last_name' => $this->request->getPost('last_name'),
                 'email' => $this->request->getPost('email'),
-                'password' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
+                'password_hash' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
                 'role_id' => $this->request->getPost('role_id')
             ]);
 
-            return redirect()->to('/')->with('success', 'User registered successfully.');
+            return redirect()->to('/register')->with('success', 'User registered successfully.');
         }
 
-        return view('auth/register', $data);
+        return view('Reusables/menu') . view('auth/register', $data);
     }
 
     public function login()

@@ -10,7 +10,7 @@ class UserModel extends Model
 {
     protected $table      = 'users';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['first_name', 'last_name', 'email', 'password', 'role_id'];
+    protected $allowedFields = ['first_name', 'last_name', 'email', 'password_hash', 'role_id'];
     protected $returnType = 'array';
 
     public function getUsersfirstNameLastNameEmailRole()
@@ -18,6 +18,14 @@ class UserModel extends Model
         return $this->select('users.first_name, users.last_name, users.email, roles.role_name')
                     ->join('roles', 'users.role_id = roles.id')
                     ->findAll();
+    }
+
+    public function getUserWithRole($user_id)
+    {
+        return $this->select('users.*, roles.role_name')
+                    ->join('roles', 'users.role_id = roles.id')
+                    ->where('users.id', $user_id)
+                    ->first();
     }
 
     public function getRoleNameByRoleId($role_id)

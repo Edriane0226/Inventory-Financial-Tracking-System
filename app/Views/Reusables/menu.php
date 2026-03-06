@@ -200,12 +200,12 @@ if ($initials === '') {
     $initials = 'IS';
 }
 $navItems = [
-    ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'url' => '/dashboard', 'roles' => ['Owner', 'Employee']],
-    ['label' => 'Products', 'icon' => 'bi-boxes', 'url' => '/products', 'roles' => ['Owner', 'Employee']],
-    ['label' => 'Stock-Out', 'icon' => 'bi-cart-check', 'url' => '/stock-out', 'roles' => ['Owner', 'Employee']],
-    ['label' => 'Stock-In', 'icon' => 'bi-receipt', 'url' => '/orders', 'roles' => ['Owner', 'Employee']],
-    ['label' => 'Users Management', 'icon' => 'bi-people', 'url' => '/auth/register', 'roles' => ['Owner']],
-    ['label' => 'Reports', 'icon' => 'bi-bar-chart-line', 'url' => '/reports', 'roles' => ['Owner']],
+    ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'url' => base_url('dashboard'), 'roles' => ['Owner', 'Employee']],
+    ['label' => 'Products', 'icon' => 'bi-boxes', 'url' => base_url('products'), 'roles' => ['Owner', 'Employee']],
+    ['label' => 'Stock-Out', 'icon' => 'bi-cart-check', 'url' => base_url('stock-out'), 'roles' => ['Owner', 'Employee']],
+    ['label' => 'Stock-In', 'icon' => 'bi-receipt', 'url' => base_url('orders'), 'roles' => ['Owner', 'Employee']],
+    ['label' => 'Users Management', 'icon' => 'bi-people', 'url' => base_url('/register'), 'roles' => ['Owner']],
+    ['label' => 'Reports', 'icon' => 'bi-bar-chart-line', 'url' => base_url('reports'), 'roles' => ['Owner']],
 ];
 
 $uri = service('uri');
@@ -217,7 +217,7 @@ if ($currentPath === '//') {
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top">
     <div class="container-fluid px-4">
-        <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="/">
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="<?= base_url() ?>">
             <span class="bg-primary text-white rounded-3 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
                 <i class="bi bi-box-seam"></i>
             </span>
@@ -252,7 +252,7 @@ if ($currentPath === '//') {
                         <div class="fw-semibold small"><?= esc(trim($firstName . ' ' . $lastName)) ?></div>
                         <span class="badge bg-light text-dark small"><?= esc($role) ?></span>
                     </div>
-                    <a href="logout" class="btn btn-outline-danger btn-sm">Logout</a>
+                    <a href="<?= base_url('logout') ?>" class="btn btn-outline-danger btn-sm">Logout</a>
                 </div>
             </div>
         </div>

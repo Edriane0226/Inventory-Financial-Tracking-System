@@ -86,6 +86,7 @@ $role = session()->get('role') ?? 'Employee';
 			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-boxes text-primary me-2"></i>Inventory Control</h2>
 			<div class="row g-3">
 				<div class="col-md-6 col-lg-4">
+					<a href="<?= base_url('stockin') ?>" class="text-decoration-none text-reset d-block h-100">
 					<div class="card h-100 border-0 shadow-sm">
 						<div class="card-body text-center">
 							<i class="bi bi-arrow-down-circle fs-3 text-success mb-3"></i>
@@ -93,6 +94,7 @@ $role = session()->get('role') ?? 'Employee';
 							<p class="card-text text-muted small">Record incoming inventory</p>
 						</div>
 					</div>
+					</a>
 				</div>
 				<div class="col-md-6 col-lg-4">
 					<div class="card h-100 border-0 shadow-sm">
@@ -299,6 +301,7 @@ $role = session()->get('role') ?? 'Employee';
 			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-boxes text-primary me-2"></i>Inventory Tasks</h2>
 			<div class="row g-3">
 				<div class="col-md-6 col-lg-4">
+					<a href="<?= base_url('stockin') ?>" class="text-decoration-none text-reset d-block h-100">
 					<div class="card h-100 border-0 shadow-sm">
 						<div class="card-body text-center">
 							<i class="bi bi-arrow-down-circle fs-3 text-success mb-3"></i>
@@ -306,6 +309,7 @@ $role = session()->get('role') ?? 'Employee';
 							<p class="card-text text-muted small">Record incoming inventory</p>
 						</div>
 					</div>
+					</a>
 				</div>
 				<div class="col-md-6 col-lg-4">
 					<div class="card h-100 border-0 shadow-sm">

@@ -203,7 +203,7 @@ $navItems = [
     ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'url' => base_url('dashboard'), 'roles' => ['Owner', 'Employee']],
     ['label' => 'Products', 'icon' => 'bi-boxes', 'url' => base_url('products'), 'roles' => ['Owner', 'Employee']],
     ['label' => 'Stock-Out', 'icon' => 'bi-cart-check', 'url' => base_url('stock-out'), 'roles' => ['Owner', 'Employee']],
-    ['label' => 'Stock-In', 'icon' => 'bi-receipt', 'url' => base_url('orders'), 'roles' => ['Owner', 'Employee']],
+	['label' => 'Stock-In', 'icon' => 'bi-receipt', 'url' => base_url('stockin'), 'roles' => ['Owner', 'Employee']],
     ['label' => 'Users Management', 'icon' => 'bi-people', 'url' => base_url('/register'), 'roles' => ['Owner']],
     ['label' => 'Reports', 'icon' => 'bi-bar-chart-line', 'url' => base_url('reports'), 'roles' => ['Owner']],
 ];

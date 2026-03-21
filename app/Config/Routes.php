@@ -16,3 +16,6 @@ $routes->post('register', 'Auth::register');
 $routes->get('dashboard', 'Auth::dashboard'); 
 
 $routes->get('logout', 'Auth::logout');
+
+$routes->get('stockin', 'StockInController::StockIn');
+$routes->post('stockin', 'StockInController::StockIn');

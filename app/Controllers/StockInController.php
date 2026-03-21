@@ -15,14 +15,19 @@ class StockInController extends BaseController
 
     public function StockIn()
     {
-        // Check if the user is logged in
-        if (!session()->get('isLoggedIn')) {
+        if (!session()->get('logged_in')) {
             return redirect()->to('/login');
+        }
+
+        $role = session()->get('role');
+        if (!in_array($role, ['Owner', 'Employee'], true)) {
+            return redirect()->to('/dashboard')->with('error', 'You are not authorized to access Stock In.');
         }
 
         $stockInModel = new StockIn();
         $capitalModel = new Capital();
         $categoriesModel = new Categories();
+        $productsModel = new Products();
         $productBatchModel = new ProductBatch();
         $unitTypeModel = new UnitTypes();
         $salesPriceModel = new SalesPrice();
@@ -44,7 +49,7 @@ class StockInController extends BaseController
                 'expiration_date' => 'required|date',
                 'capital' => 'required|decimal',
                 'stockin_date' => 'required|date',
-                'barcode' => 'required|alpha_numeric',
+                'barcode' => 'required|alpha_numeric_space',
                 'sales_price' => 'required|decimal',
                 'unit_type' => 'required',
             ]);
@@ -53,56 +58,95 @@ class StockInController extends BaseController
                 return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
             }
 
-            if ($validate) {
-                // Process the form data and insert into the database
-                $stockInModel = new StockIn();
-                $capitalModel = new Capital();
-                $productsModel = new Products();
-                $productBatchModel = new ProductBatch();
-                $categoriesModel = new Categories();
-                $unitTypeModel = new UnitTypes();
+            $category = $categoriesModel->getIdbyCategoryName($this->request->getPost('category'));
+            $unitType = $unitTypeModel->getIdbyUnitTypeName($this->request->getPost('unit_type'));
 
-                
-
-                $categoryID = $categoriesModel->getIdbyCategoryName($this->request->getPost('category'))['id'];
-                $unitTypeID = $unitTypeModel->getIdbyUnitTypeName($this->request->getPost('unit_type'))['id'];
-
-                $stockInModel->insert([
-                    'product_name' => $this->request->getPost('product_name'),
-                    'quantity' => $this->request->getPost('quantity'),
-                    'category_id' => $categoryID,
-                    'unit_type_id' => $unitTypeID,
-                    'stock_in_date' => $this->request->getPost('stockin_date'),
-                    'barcode' => $this->request->getPost('barcode'),
-                    'recorded_by' => session()->get('userId'),
-                ]);
-
-                $stockInID = $stockInModel->getStockInIDWithProductName($this->request->getPost('product_name'))['id'];
-
-                $productBatchModel->insert([
-                    'batch_number' => $this->request->getPost('batch_number'),
-                    'expiration_date' => $this->request->getPost('expiration_date'),
-                    'stock_in_id' => $stockInID,
-                ]);
-
-                $capitalModel->insert([
-                    'capital' => $this->request->getPost('capital'),
-                    'date' => $this->request->getPost('stockin_date'),
-                    'stock_in_id' => $stockInID,
-                ]);
-
-                $productsModel->insert([
-                    'stock_in_id' => $stockInID,
-                ]);
-
-                $salesPriceModel->insert([
-                    'sales_price' => $this->request->getPost('sales_price'),
-                    'effective_date' => $this->request->getPost('stockin_date'),
-                    'product_id' => $productsModel->getIdbyStockInID($stockInID)['id'],
-                ]);
-
-                return redirect()->to('/stockin')->with('success', 'Stock In created successfully');
+            if (!$category || !$unitType) {
+                return redirect()->back()->withInput()->with('error', 'Selected category or unit type does not exist.');
             }
+
+            $stockInDate = date('Y-m-d H:i:s', strtotime((string) $this->request->getPost('stockin_date')));
+            $expirationDate = date('Y-m-d H:i:s', strtotime((string) $this->request->getPost('expiration_date')));
+
+            $db = \Config\Database::connect();
+            $db->transBegin();
+
+            $stockInInserted = $stockInModel->insert([
+                'product_name' => $this->request->getPost('product_name'),
+                'quantity' => (int) $this->request->getPost('quantity'),
+                'category_id' => $category['id'],
+                'unit_type_id' => $unitType['id'],
+                'stock_in_date' => $stockInDate,
+                'barcode' => $this->request->getPost('barcode'),
+                'recorded_by' => session()->get('user_id'),
+            ]);
+
+            if ($stockInInserted === false) {
+                $db->transRollback();
+                $stockInErrors = implode(' ', $stockInModel->errors());
+                return redirect()->back()->withInput()->with('error', 'Could not save Stock In row. ' . ($stockInErrors ?: 'Please check database schema.'));
+            }
+
+            $stockInID = (int) $stockInInserted;
+
+            $batchInserted = $productBatchModel->insert([
+                'batch_number' => $this->request->getPost('batch_number'),
+                'expiration_date' => $expirationDate,
+                'stock_in_id' => $stockInID,
+            ]);
+
+            if ($batchInserted === false) {
+                $db->transRollback();
+                $batchErrors = implode(' ', $productBatchModel->errors());
+                return redirect()->back()->withInput()->with('error', 'Could not save product batch. ' . ($batchErrors ?: 'Please check database schema.'));
+            }
+
+            $capitalInserted = $capitalModel->insert([
+                'capital' => $this->request->getPost('capital'),
+                'date' => $stockInDate,
+                'stock_in_id' => $stockInID,
+            ]);
+
+            if ($capitalInserted === false) {
+                $db->transRollback();
+                $capitalErrors = implode(' ', $capitalModel->errors());
+                return redirect()->back()->withInput()->with('error', 'Could not save capital row. ' . ($capitalErrors ?: 'Please check database schema.'));
+            }
+
+            $productInserted = $productsModel->insert([
+                'stock_in_id' => $stockInID,
+            ]);
+
+            if ($productInserted === false) {
+                $db->transRollback();
+                $productErrors = implode(' ', $productsModel->errors());
+                return redirect()->back()->withInput()->with('error', 'Could not save product row. ' . ($productErrors ?: 'Please check database schema.'));
+            }
+
+            $productID = (int) $productInserted;
+
+            $salePriceInserted = $salesPriceModel->insert([
+                'sale_price' => $this->request->getPost('sales_price'),
+                'effective_date' => $stockInDate,
+                'product_id' => $productID,
+            ]);
+
+            if ($salePriceInserted === false) {
+                $db->transRollback();
+                $salePriceErrors = implode(' ', $salesPriceModel->errors());
+                return redirect()->back()->withInput()->with('error', 'Could not save sales price row. ' . ($salePriceErrors ?: 'Please check database schema.'));
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                $dbError = $db->error();
+                $dbMessage = $dbError['message'] ?? 'Please try again.';
+                return redirect()->back()->withInput()->with('error', 'Could not save Stock In record. ' . $dbMessage);
+            }
+
+            $db->transCommit();
+
+            return redirect()->to('/stockin')->with('success', 'Stock In created successfully');
         }
 
         $data = [
@@ -111,8 +155,9 @@ class StockInController extends BaseController
             'categories' => $categoriesModel->findAll(),
             'productBatches' => $productBatchModel->findAll(),
             'unitTypes' => $unitTypeModel->findAll(),
+            'salesPrices' => $salesPriceModel->findAll(),
         ];
 
-        return view('stockin/index', $data);
+        return view('Reusables/menu') . view('Stock_in/index', $data);
     }
 }

@@ -8,6 +8,11 @@ class Products extends Model
 {
     protected $table = 'products';
     protected $primaryKey = 'id';
-    protected $fillable = ['sales_price_id', 'stockin_id'];
+    protected $allowedFields = ['stock_in_id'];
     protected $returnType = 'array';
+
+    public function getIdbyStockInID($stockInID)
+    {
+        return $this->where('stock_in_id', $stockInID)->first();
+    }
 }

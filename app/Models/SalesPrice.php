@@ -6,9 +6,9 @@ use CodeIgniter\Model;
 
 class SalesPrice extends Model
 {
-    protected $table      = 'sales_prices';
+    protected $table      = 'sales_price';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['sales_price', 'effective_date', 'product_id'];
+    protected $allowedFields = ['sale_price', 'effective_date', 'product_id'];
     protected $returnType = 'array';
     
 

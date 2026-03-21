@@ -15,6 +15,10 @@ class CreateStockInTable extends Migration
                 'unsigned' => true,
                 'auto_increment' => true,
             ],
+            'product_name' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+            ],
             'product_batch_id' => [
                 'type' => 'INT',
                 'constraint' => 11,
@@ -27,11 +31,6 @@ class CreateStockInTable extends Migration
             'stock_in_date' => [
                 'type' => 'DATETIME',
             ],
-            'capital_id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
-            ],
             'barcode' => [
                 'type' => 'VARCHAR',
                 'constraint' => 255,
@@ -41,16 +40,6 @@ class CreateStockInTable extends Migration
                 'constraint' => 11,
             ],
             'unit_type_id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
-            ],
-            'capital_id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
-            ],
-            'category_id' => [
                 'type' => 'INT',
                 'constraint' => 11,
                 'unsigned' => true,

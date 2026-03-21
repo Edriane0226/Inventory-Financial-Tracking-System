@@ -22,9 +22,15 @@ class CreateCapitalTable extends Migration
             'effective_date' => [
                 'type' => 'DATETIME',
             ],
+            'stock_in_id' => [
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+            ],
         ]);
 
         $this->forge->addKey('id', true);
+        $this->forge->addForeignKey('stock_in_id', 'stock_in', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('capital');
     }
 

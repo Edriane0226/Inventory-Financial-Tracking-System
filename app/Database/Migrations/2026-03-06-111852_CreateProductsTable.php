@@ -15,10 +15,6 @@ class CreateProductsTable extends Migration
                 'unsigned' => true,
                 'auto_increment' => true,
             ],
-            'product_name' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-            ],
             'sales_price_id' => [
                 'type' => 'INT',
                 'constraint' => 11,

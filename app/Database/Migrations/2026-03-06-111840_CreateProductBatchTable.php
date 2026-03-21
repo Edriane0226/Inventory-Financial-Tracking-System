@@ -15,6 +15,10 @@ class CreateProductBatchTable extends Migration
                 'unsigned' => true,
                 'auto_increment' => true,
             ],
+            'batch_number' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+            ],
             'expiration_date' => [
                 'type' => 'DATETIME',
             ],

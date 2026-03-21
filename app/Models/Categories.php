@@ -4,10 +4,11 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class RoleModel extends Model
+class Categories extends Model
 {
-    protected $table      = 'roles';
+    protected $table      = 'categories';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['role_name'];
+    protected $allowedFields = ['category_name'];
     protected $returnType = 'array';
+    
 }

@@ -19,7 +19,7 @@ class CreateCapitalTable extends Migration
                 'type' => 'DECIMAL',
                 'constraint' => '10,2',
             ],
-            'effective_date' => [
+            'date' => [
                 'type' => 'DATETIME',
             ],
             'stock_in_id' => [

@@ -22,9 +22,15 @@ class CreateSalePriceTable extends Migration
             'effective_date' => [
                 'type' => 'DATETIME',
             ],
+            'product_id' => [
+                'type' => 'INT',
+                'constraint' => 11,
+                'unsigned' => true,
+            ],
         ]);
 
         $this->forge->addKey('id', true);
+        $this->forge->addForeignKey('product_id', 'products', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('sales_price');
     }
 

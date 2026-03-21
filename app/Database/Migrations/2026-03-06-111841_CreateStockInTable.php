@@ -19,11 +19,6 @@ class CreateStockInTable extends Migration
                 'type' => 'VARCHAR',
                 'constraint' => 255,
             ],
-            'product_batch_id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
-            ],
             'quantity' => [
                 'type' => 'INT',
                 'constraint' => 11,
@@ -51,10 +46,7 @@ class CreateStockInTable extends Migration
             ],
         ]);
         $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('product_batch_id', 'product_batch', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('unit_type_id', 'unit_types', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('capital_id', 'capital', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('category_id', 'categories', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('recorded_by', 'users', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('stock_in');
     }

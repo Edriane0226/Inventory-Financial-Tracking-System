@@ -15,11 +15,6 @@ class CreateProductsTable extends Migration
                 'unsigned' => true,
                 'auto_increment' => true,
             ],
-            'sales_price_id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
-            ],
             'stock_in_id' => [
                 'type' => 'INT',
                 'constraint' => 11,
@@ -29,7 +24,6 @@ class CreateProductsTable extends Migration
 
         $this->forge->addKey('id', true);
         $this->forge->addForeignKey('stock_in_id', 'stock_in', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('sales_price_id', 'sales_price', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('products');
     }
 

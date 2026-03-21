@@ -8,7 +8,7 @@ class ProductBatch extends Model
 {
     protected $table      = 'product_batch';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['batch_number', 'expiration_date'];
+    protected $allowedFields = ['batch_number', 'expiration_date', 'stock_in_id'];
 
     public function getIdbyBatchNumber($batch_number)
     {

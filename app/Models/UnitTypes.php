@@ -10,5 +10,11 @@ class UnitTypes extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = ['unit_type_name'];
     protected $returnType = 'array';
+
+
+    public function getIdbyUnitTypeName($unit_type_name)
+    {
+        return $this->where('unit_type_name', $unit_type_name)->first();
+    }
     
 }

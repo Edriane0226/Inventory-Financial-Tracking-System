@@ -11,4 +11,9 @@ class Categories extends Model
     protected $allowedFields = ['category_name'];
     protected $returnType = 'array';
     
+
+    public function getIdbyCategoryName($category_name)
+    {
+        return $this->where('category_name', $category_name)->first();
+    }
 }

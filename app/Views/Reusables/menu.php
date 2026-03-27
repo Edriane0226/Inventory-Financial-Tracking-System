@@ -112,6 +112,12 @@
 			border: none;
 			border-radius: 22px;
 			box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+			transition: transform 0.3s ease, box-shadow 0.3s ease;
+		}
+
+		.card:hover {
+			transform: translateY(-6px);
+			box-shadow: 0 28px 55px rgba(15, 23, 42, 0.12);
 		}
 
 		.table thead {

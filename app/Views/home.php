@@ -16,6 +16,13 @@
             font-size: 2rem;
             color: #0d6efd;
         }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+        }
     </style>
 </head>
 <body>

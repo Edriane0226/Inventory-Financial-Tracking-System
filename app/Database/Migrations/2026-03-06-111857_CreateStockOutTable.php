@@ -62,10 +62,6 @@ class CreateStockOutTable extends Migration
             'stock_out_date' => [
                 'type' => 'DATETIME',
             ],
-            'barcode' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-            ],
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addForeignKey('product_id', 'products', 'id', 'CASCADE', 'CASCADE');
@@ -74,6 +70,7 @@ class CreateStockOutTable extends Migration
         $this->forge->addForeignKey('reason_id', 'reasons', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('receipt_id', 'receipts', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('capital_id', 'capital', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('category_id', 'categories', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('recorded_by', 'users', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('stock_out');
     }

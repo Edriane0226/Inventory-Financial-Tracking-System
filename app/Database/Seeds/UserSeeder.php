@@ -17,9 +17,9 @@ class UserSeeder extends Seeder
                 'role_id' => 1, // Owner
             ],
             [
-                'first_name' => 'Bangonon',
-                'last_name' => 'Edriane',
-                'email' => 'bangonon@gmail.com',
+                'first_name' => 'Adrienne',
+                'last_name' => 'Marinay',
+                'email' => 'adriennemarinay@gmail.com',
                 'password_hash' => password_hash('12345678', PASSWORD_DEFAULT),
                 'role_id' => 2, // Employee
             ]

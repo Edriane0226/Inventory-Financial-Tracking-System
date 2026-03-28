@@ -19,6 +19,10 @@ class CreateReceiptTable extends Migration
                 'type' => 'VARCHAR',
                 'constraint' => 255,
             ],
+            'total_amount' => [
+                'type' => 'DECIMAL',
+                'constraint' => '10,2',
+            ],
         ]);
 
         $this->forge->addKey('id', true);

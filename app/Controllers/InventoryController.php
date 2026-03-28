@@ -18,11 +18,13 @@ class InventoryController extends BaseController
         $db = \Config\Database::connect();
 
         $productSummary = $db->table('stock_in si')
-            ->select("si.product_name, SUM(si.quantity) AS total_quantity, MAX(si.stock_in_date) AS last_stock_in_date, GROUP_CONCAT(DISTINCT c.category_name ORDER BY c.category_name SEPARATOR ', ') AS categories, GROUP_CONCAT(DISTINCT ut.unit_type_name ORDER BY ut.unit_type_name SEPARATOR ', ') AS unit_types", false)
+            ->select("si.product_name, pb.batch_number, pb.expiration_date, SUM(si.quantity) AS total_quantity, MAX(si.stock_in_date) AS last_stock_in_date, GROUP_CONCAT(DISTINCT c.category_name ORDER BY c.category_name SEPARATOR ', ') AS categories, GROUP_CONCAT(DISTINCT ut.unit_type_name ORDER BY ut.unit_type_name SEPARATOR ', ') AS unit_types", false)
+            ->join('product_batch pb', 'pb.stock_in_id = si.id', 'left')
             ->join('categories c', 'c.id = si.category_id', 'left')
             ->join('unit_types ut', 'ut.id = si.unit_type_id', 'left')
-            ->groupBy('si.product_name')
+            ->groupBy(['si.product_name', 'pb.batch_number'])
             ->orderBy('si.product_name', 'ASC')
+            ->orderBy('pb.batch_number', 'ASC')
             ->get()
             ->getResultArray();
 

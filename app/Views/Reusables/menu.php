@@ -208,6 +208,7 @@ if ($initials === '') {
 $navItems = [
     ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'url' => base_url('dashboard'), 'roles' => ['Owner', 'Employee']],
     ['label' => 'Products', 'icon' => 'bi-boxes', 'url' => base_url('products'), 'roles' => ['Owner', 'Employee']],
+	['label' => 'Stock Levels', 'icon' => 'bi-graph-up-arrow', 'url' => base_url('stock-levels'), 'roles' => ['Owner', 'Employee']],
     ['label' => 'Stock-Out', 'icon' => 'bi-cart-check', 'url' => base_url('stock-out'), 'roles' => ['Owner', 'Employee']],
 	['label' => 'Cashier', 'icon' => 'bi-cash-stack', 'url' => base_url('stock-out/cashier'), 'roles' => ['Owner', 'Employee']],
 	['label' => 'Stock-In', 'icon' => 'bi-receipt', 'url' => base_url('stockin'), 'roles' => ['Owner', 'Employee']],

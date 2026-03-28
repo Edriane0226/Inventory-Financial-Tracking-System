@@ -18,6 +18,7 @@ $routes->get('dashboard', 'Auth::dashboard');
 $routes->get('logout', 'Auth::logout');
 
 $routes->get('products', 'InventoryController::index');
+$routes->get('stock-levels', 'StockController::index');
 
 $routes->get('stockin', 'StockInController::StockIn');
 $routes->post('stockin', 'StockInController::StockIn');

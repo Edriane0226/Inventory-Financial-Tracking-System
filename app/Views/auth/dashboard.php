@@ -316,6 +316,7 @@ $role = session()->get('role') ?? 'Employee';
 					</a>
 				</div>
 				<div class="col-md-6 col-lg-4">
+					<a href="<?= base_url('stock-levels') ?>" class="text-decoration-none text-reset d-block h-100">
 					<div class="card h-100 border-0 shadow-sm">
 						<div class="card-body text-center">
 							<i class="bi bi-eye fs-3 text-primary mb-3"></i>
@@ -323,6 +324,7 @@ $role = session()->get('role') ?? 'Employee';
 							<p class="card-text text-muted small">Monitor product availability</p>
 						</div>
 					</div>
+					</a>
 				</div>
 				<div class="col-md-6 col-lg-4">
 					<div class="card h-100 border-0 shadow-sm">

@@ -67,66 +67,120 @@ class StockInController extends BaseController
 
             $stockInDate = date('Y-m-d H:i:s', strtotime((string) $this->request->getPost('stockin_date')));
             $expirationDate = date('Y-m-d H:i:s', strtotime((string) $this->request->getPost('expiration_date')));
+            $productName = trim((string) $this->request->getPost('product_name'));
+            $batchNumber = trim((string) $this->request->getPost('batch_number'));
+            $incomingQty = (int) $this->request->getPost('quantity');
+            $incomingCapital = (float) $this->request->getPost('capital');
+            $incomingSalesPrice = (float) $this->request->getPost('sales_price');
 
             $db = \Config\Database::connect();
             $db->transBegin();
 
-            $stockInInserted = $stockInModel->insert([
-                'product_name' => $this->request->getPost('product_name'),
-                'quantity' => (int) $this->request->getPost('quantity'),
-                'category_id' => $category['id'],
-                'unit_type_id' => $unitType['id'],
-                'stock_in_date' => $stockInDate,
-                'barcode' => $this->request->getPost('barcode'),
-                'recorded_by' => session()->get('user_id'),
-            ]);
+            $existingStockRow = $db->table('stock_in si')
+                ->select('si.id, si.quantity')
+                ->join('product_batch pb', 'pb.stock_in_id = si.id', 'inner')
+                ->where('si.product_name', $productName)
+                ->where('si.category_id', (int) $category['id'])
+                ->where('si.unit_type_id', (int) $unitType['id'])
+                ->where('si.stock_in_date', $stockInDate)
+                ->where('pb.batch_number', $batchNumber)
+                ->where('pb.expiration_date', $expirationDate)
+                ->limit(1)
+                ->get()
+                ->getRowArray();
 
-            if ($stockInInserted === false) {
-                $db->transRollback();
-                $stockInErrors = implode(' ', $stockInModel->errors());
-                return redirect()->back()->withInput()->with('error', 'Could not save Stock In row. ' . ($stockInErrors ?: 'Please check database schema.'));
+            $mergedToExisting = false;
+
+            if ($existingStockRow) {
+                $stockInID = (int) $existingStockRow['id'];
+                $mergedToExisting = true;
+
+                $quantityUpdated = $db->table('stock_in')
+                    ->set('quantity', 'quantity + ' . $incomingQty, false)
+                    ->where('id', $stockInID)
+                    ->update();
+
+                if (!$quantityUpdated) {
+                    $db->transRollback();
+                    return redirect()->back()->withInput()->with('error', 'Could not update existing stock quantity. Please try again.');
+                }
+            } else {
+                $stockInInserted = $stockInModel->insert([
+                    'product_name' => $productName,
+                    'quantity' => $incomingQty,
+                    'category_id' => $category['id'],
+                    'unit_type_id' => $unitType['id'],
+                    'stock_in_date' => $stockInDate,
+                    'barcode' => $this->request->getPost('barcode'),
+                    'recorded_by' => session()->get('user_id'),
+                ]);
+
+                if ($stockInInserted === false) {
+                    $db->transRollback();
+                    $stockInErrors = implode(' ', $stockInModel->errors());
+                    return redirect()->back()->withInput()->with('error', 'Could not save Stock In row. ' . ($stockInErrors ?: 'Please check database schema.'));
+                }
+
+                $stockInID = (int) $stockInInserted;
+
+                $batchInserted = $productBatchModel->insert([
+                    'batch_number' => $batchNumber,
+                    'expiration_date' => $expirationDate,
+                    'stock_in_id' => $stockInID,
+                ]);
+
+                if ($batchInserted === false) {
+                    $db->transRollback();
+                    $batchErrors = implode(' ', $productBatchModel->errors());
+                    return redirect()->back()->withInput()->with('error', 'Could not save product batch. ' . ($batchErrors ?: 'Please check database schema.'));
+                }
             }
 
-            $stockInID = (int) $stockInInserted;
+            $capitalRow = $capitalModel->where('stock_in_id', $stockInID)->first();
+            if ($capitalRow) {
+                $capitalUpdated = $capitalModel->update((int) $capitalRow['id'], [
+                    'capital' => (float) ($capitalRow['capital'] ?? 0) + $incomingCapital,
+                    'date' => $stockInDate,
+                ]);
 
-            $batchInserted = $productBatchModel->insert([
-                'batch_number' => $this->request->getPost('batch_number'),
-                'expiration_date' => $expirationDate,
-                'stock_in_id' => $stockInID,
-            ]);
+                if ($capitalUpdated === false) {
+                    $db->transRollback();
+                    $capitalErrors = implode(' ', $capitalModel->errors());
+                    return redirect()->back()->withInput()->with('error', 'Could not update capital row. ' . ($capitalErrors ?: 'Please check database schema.'));
+                }
+            } else {
+                $capitalInserted = $capitalModel->insert([
+                    'capital' => $incomingCapital,
+                    'date' => $stockInDate,
+                    'stock_in_id' => $stockInID,
+                ]);
 
-            if ($batchInserted === false) {
-                $db->transRollback();
-                $batchErrors = implode(' ', $productBatchModel->errors());
-                return redirect()->back()->withInput()->with('error', 'Could not save product batch. ' . ($batchErrors ?: 'Please check database schema.'));
+                if ($capitalInserted === false) {
+                    $db->transRollback();
+                    $capitalErrors = implode(' ', $capitalModel->errors());
+                    return redirect()->back()->withInput()->with('error', 'Could not save capital row. ' . ($capitalErrors ?: 'Please check database schema.'));
+                }
             }
 
-            $capitalInserted = $capitalModel->insert([
-                'capital' => $this->request->getPost('capital'),
-                'date' => $stockInDate,
-                'stock_in_id' => $stockInID,
-            ]);
+            $productRow = $productsModel->where('stock_in_id', $stockInID)->first();
+            if (!$productRow) {
+                $productInserted = $productsModel->insert([
+                    'stock_in_id' => $stockInID,
+                ]);
 
-            if ($capitalInserted === false) {
-                $db->transRollback();
-                $capitalErrors = implode(' ', $capitalModel->errors());
-                return redirect()->back()->withInput()->with('error', 'Could not save capital row. ' . ($capitalErrors ?: 'Please check database schema.'));
+                if ($productInserted === false) {
+                    $db->transRollback();
+                    $productErrors = implode(' ', $productsModel->errors());
+                    return redirect()->back()->withInput()->with('error', 'Could not save product row. ' . ($productErrors ?: 'Please check database schema.'));
+                }
+
+                $productID = (int) $productInserted;
+            } else {
+                $productID = (int) $productRow['id'];
             }
-
-            $productInserted = $productsModel->insert([
-                'stock_in_id' => $stockInID,
-            ]);
-
-            if ($productInserted === false) {
-                $db->transRollback();
-                $productErrors = implode(' ', $productsModel->errors());
-                return redirect()->back()->withInput()->with('error', 'Could not save product row. ' . ($productErrors ?: 'Please check database schema.'));
-            }
-
-            $productID = (int) $productInserted;
 
             $salePriceInserted = $salesPriceModel->insert([
-                'sale_price' => $this->request->getPost('sales_price'),
+                'sale_price' => $incomingSalesPrice,
                 'effective_date' => $stockInDate,
                 'product_id' => $productID,
             ]);
@@ -145,6 +199,10 @@ class StockInController extends BaseController
             }
 
             $db->transCommit();
+
+            if ($mergedToExisting) {
+                return redirect()->to('/stockin')->with('success', 'Matching stock entry found. Quantity was added to the existing batch.');
+            }
 
             return redirect()->to('/stockin')->with('success', 'Stock In created successfully');
         }

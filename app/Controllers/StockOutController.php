@@ -12,6 +12,7 @@ use App\Models\Reason;
 use App\Models\Receipt;
 use App\Models\SalesPrice;
 use App\Models\StockOut;
+use App\Models\UserModel;
 
 class StockOutController extends BaseController
 {
@@ -91,15 +92,22 @@ class StockOutController extends BaseController
                     return redirect()->back()->withInput()->with('error', 'No available stock for this barcode.');
                 }
 
+                if (!empty($lookup['prioritize_required'])) {
+                    return redirect()->back()->withInput()->with(
+                        'error',
+                        'Prioritize batch ' . ($lookup['prioritize_batch_number'] ?? '1') . ' first, please try again.'
+                    );
+                }
+
                 $alreadyQueued = 0;
                 foreach ($cart as $item) {
-                    if (($item['barcode'] ?? '') === $barcode) {
+                    if (($item['product_name'] ?? '') === ($lookup['product_name'] ?? '')) {
                         $alreadyQueued += (int) ($item['quantity'] ?? 0);
                     }
                 }
 
                 if (($alreadyQueued + $qty) > (int) $lookup['total_available_qty']) {
-                    return redirect()->back()->withInput()->with('error', 'Queued quantity exceeds available stock for this barcode.');
+                    return redirect()->back()->withInput()->with('error', 'Queued quantity exceeds available stock for this product.');
                 }
 
                 $cart[] = [
@@ -313,32 +321,47 @@ class StockOutController extends BaseController
     {
         $db = \Config\Database::connect();
 
-        $nextBatch = $db->table('stock_in si')
+        $scannedBatch = $db->table('stock_in si')
             ->select('si.id as stock_in_id, si.product_name, si.quantity, si.barcode, si.unit_type_id, si.category_id, pb.id as product_batch_id, pb.batch_number, pb.expiration_date, ut.unit_type_name, c.category_name')
             ->join('product_batch pb', 'pb.stock_in_id = si.id', 'inner')
             ->join('unit_types ut', 'ut.id = si.unit_type_id', 'left')
             ->join('categories c', 'c.id = si.category_id', 'left')
             ->where('si.barcode', $barcode)
             ->where('si.quantity >', 0)
-            ->orderBy('pb.expiration_date', 'ASC')
+            // FIFO: oldest stock-in record is always consumed first.
+            ->orderBy('si.stock_in_date', 'ASC')
+            ->orderBy('si.id', 'ASC')
             ->orderBy('pb.id', 'ASC')
             ->get()
             ->getRowArray();
 
-        if (!$nextBatch) {
+        if (!$scannedBatch) {
             return null;
         }
 
-        $totalAvailable = $db->table('stock_in')
+        $fifoBatch = $db->table('stock_in si')
+            ->select('si.id as stock_in_id, si.product_name, si.quantity, si.barcode, si.unit_type_id, si.category_id, pb.id as product_batch_id, pb.batch_number, pb.expiration_date, ut.unit_type_name, c.category_name')
+            ->join('product_batch pb', 'pb.stock_in_id = si.id', 'inner')
+            ->join('unit_types ut', 'ut.id = si.unit_type_id', 'left')
+            ->join('categories c', 'c.id = si.category_id', 'left')
+            ->where('si.product_name', $scannedBatch['product_name'])
+            ->where('si.quantity >', 0)
+            ->orderBy('si.stock_in_date', 'ASC')
+            ->orderBy('si.id', 'ASC')
+            ->orderBy('pb.id', 'ASC')
+            ->get()
+            ->getRowArray();
+
+        $totalAvailable = $db->table('stock_in si')
             ->selectSum('quantity')
-            ->where('barcode', $barcode)
+            ->where('si.product_name', $scannedBatch['product_name'])
             ->where('quantity >', 0)
             ->get()
             ->getRowArray();
 
         $product = $db->table('products')
             ->select('id')
-            ->where('stock_in_id', (int) $nextBatch['stock_in_id'])
+            ->where('stock_in_id', (int) $scannedBatch['stock_in_id'])
             ->get()
             ->getRowArray();
 
@@ -356,17 +379,22 @@ class StockOutController extends BaseController
             }
         }
 
+        $prioritizeRequired = $fifoBatch
+            && (int) $fifoBatch['stock_in_id'] !== (int) $scannedBatch['stock_in_id'];
+
         return [
-            'product_name' => $nextBatch['product_name'],
-            'barcode' => $nextBatch['barcode'],
-            'unit_type' => $nextBatch['unit_type_name'] ?? 'N/A',
-            'category' => $nextBatch['category_name'] ?? 'N/A',
-            'product_batch_id' => (int) $nextBatch['product_batch_id'],
+            'product_name' => $scannedBatch['product_name'],
+            'barcode' => $scannedBatch['barcode'],
+            'unit_type' => $scannedBatch['unit_type_name'] ?? 'N/A',
+            'category' => $scannedBatch['category_name'] ?? 'N/A',
+            'product_batch_id' => (int) $scannedBatch['product_batch_id'],
             'sales_price' => $salesPriceValue,
-            'next_batch_number' => $nextBatch['batch_number'],
-            'next_batch_expiration' => $nextBatch['expiration_date'],
-            'next_batch_available_qty' => (int) $nextBatch['quantity'],
+            'next_batch_number' => $fifoBatch['batch_number'] ?? $scannedBatch['batch_number'],
+            'next_batch_expiration' => $fifoBatch['expiration_date'] ?? $scannedBatch['expiration_date'],
+            'next_batch_available_qty' => (int) ($fifoBatch['quantity'] ?? $scannedBatch['quantity']),
             'total_available_qty' => (int) ($totalAvailable['quantity'] ?? 0),
+            'prioritize_required' => $prioritizeRequired,
+            'prioritize_batch_number' => $fifoBatch['batch_number'] ?? null,
         ];
     }
 
@@ -374,6 +402,11 @@ class StockOutController extends BaseController
     {
         if (!session()->get('logged_in')) {
             return redirect()->to('/login');
+        }
+
+        if ($this->getRecordedByUserId() === null) {
+            session()->destroy();
+            return redirect()->to('/login')->with('error', 'Your session is no longer valid. Please log in again.');
         }
 
         $role = session()->get('role');
@@ -405,6 +438,14 @@ class StockOutController extends BaseController
     private function processStockOut(string $barcode, int $requestedQty, string $reasonText, string $stockOutDate, bool $isCashier, ?int $receiptId = null, bool $manageTransaction = true): array
     {
         $db = \Config\Database::connect();
+        $recordedBy = $this->getRecordedByUserId();
+
+        if ($recordedBy === null) {
+            return [
+                'ok' => false,
+                'message' => 'Your session user is invalid. Please log in again and retry.',
+            ];
+        }
 
         $reasonModel = new Reason();
         $receiptModel = new Receipt();
@@ -413,12 +454,32 @@ class StockOutController extends BaseController
         $capitalModel = new Capital();
         $productsModel = new Products();
 
-        $stockRows = $db->table('stock_in si')
-            ->select('si.id as stock_in_id, si.product_name, si.quantity, si.unit_type_id, si.category_id, pb.id as batch_id, pb.batch_number, pb.expiration_date')
+        $scannedBatch = $db->table('stock_in si')
+            ->select('si.id as stock_in_id, si.product_name, si.quantity, pb.id as batch_id, pb.batch_number')
             ->join('product_batch pb', 'pb.stock_in_id = si.id', 'inner')
             ->where('si.barcode', $barcode)
             ->where('si.quantity >', 0)
-            ->orderBy('pb.expiration_date', 'ASC')
+            ->orderBy('si.stock_in_date', 'ASC')
+            ->orderBy('si.id', 'ASC')
+            ->orderBy('pb.id', 'ASC')
+            ->get()
+            ->getRowArray();
+
+        if (!$scannedBatch) {
+            return [
+                'ok' => false,
+                'message' => 'No available stock for this barcode.',
+            ];
+        }
+
+        $stockRows = $db->table('stock_in si')
+            ->select('si.id as stock_in_id, si.product_name, si.quantity, si.unit_type_id, si.category_id, pb.id as batch_id, pb.batch_number, pb.expiration_date')
+            ->join('product_batch pb', 'pb.stock_in_id = si.id', 'inner')
+            ->where('si.product_name', $scannedBatch['product_name'])
+            ->where('si.quantity >', 0)
+            // FIFO: deduct from the oldest stock-in batch first, then next batch.
+            ->orderBy('si.stock_in_date', 'ASC')
+            ->orderBy('si.id', 'ASC')
             ->orderBy('pb.id', 'ASC')
             ->get()
             ->getResultArray();
@@ -439,6 +500,14 @@ class StockOutController extends BaseController
             return [
                 'ok' => false,
                 'message' => 'Requested quantity exceeds available stock. Available: ' . $totalAvailable,
+            ];
+        }
+
+        $firstRow = $stockRows[0] ?? null;
+        if ($firstRow && (int) $firstRow['stock_in_id'] !== (int) $scannedBatch['stock_in_id']) {
+            return [
+                'ok' => false,
+                'message' => 'Prioritize batch ' . ($firstRow['batch_number'] ?? '1') . ' first, please try again.',
             ];
         }
 
@@ -544,7 +613,7 @@ class StockOutController extends BaseController
                 'receipt_id' => $receiptId,
                 'capital_id' => $capital['id'],
                 'category_id' => $row['category_id'],
-                'recorded_by' => session()->get('user_id'),
+                'recorded_by' => $recordedBy,
                 'stock_out_date' => $stockOutDateTime,
             ]);
 
@@ -591,5 +660,22 @@ class StockOutController extends BaseController
             'deducted' => $deducted,
             'sales_total' => round($salesTotal, 2),
         ];
+    }
+
+    private function getRecordedByUserId(): ?int
+    {
+        $userId = (int) (session()->get('user_id') ?? 0);
+        if ($userId <= 0) {
+            return null;
+        }
+
+        $userModel = new UserModel();
+        $user = $userModel->select('id')->find($userId);
+
+        if (!$user) {
+            return null;
+        }
+
+        return (int) $user['id'];
     }
 }

@@ -1,6 +1,7 @@
 <?php
 $firstName = session()->get('first_name') ?? 'there';
 $role = session()->get('role') ?? 'Employee';
+$lowStockCount = (int) ($lowStockCount ?? 0);
 ?>
 <?php if(session()->get('role') == 'Owner'): ?>
 	<div class="dashboard-shell">
@@ -119,13 +120,18 @@ $role = session()->get('role') ?? 'Employee';
 			</div>
 			<div class="row g-3 mt-2">
 				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
+					<a href="<?= base_url('stock-levels?status=low_stock') ?>" class="text-decoration-none text-reset d-block h-100">
+					<div class="card h-100 border-0 shadow-sm position-relative">
+						<div class="card-body text-center position-relative">
+							<?php if ($lowStockCount > 0): ?>
+								<span class="badge bg-danger low-stock-card-badge"><?= esc((string) $lowStockCount) ?></span>
+							<?php endif; ?>
 							<i class="bi bi-exclamation-triangle fs-3 text-danger mb-3"></i>
 							<h6 class="card-title">Low Stock Alert</h6>
 							<p class="card-text text-muted small">Monitor stock levels</p>
 						</div>
 					</div>
+					</a>
 				</div>
 				<div class="col-md-6 col-lg-4">
 					<div class="card h-100 border-0 shadow-sm">
@@ -327,13 +333,18 @@ $role = session()->get('role') ?? 'Employee';
 					</a>
 				</div>
 				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
+					<a href="<?= base_url('stock-levels?status=low_stock') ?>" class="text-decoration-none text-reset d-block h-100">
+					<div class="card h-100 border-0 shadow-sm position-relative">
+						<div class="card-body text-center position-relative">
+							<?php if ($lowStockCount > 0): ?>
+								<span class="badge bg-danger low-stock-card-badge"><?= esc((string) $lowStockCount) ?></span>
+							<?php endif; ?>
 							<i class="bi bi-exclamation-triangle fs-3 text-warning mb-3"></i>
 							<h6 class="card-title">Low Stock Alerts</h6>
 							<p class="card-text text-muted small">Check items running low</p>
 						</div>
 					</div>
+					</a>
 				</div>
 			</div>
 			<div class="row g-3 mt-2">
@@ -396,6 +407,19 @@ $role = session()->get('role') ?? 'Employee';
 	</div>
     <?php endif; ?>
 
+	<?php if ($lowStockCount > 0): ?>
+		<div class="position-fixed end-0 p-3" style="z-index: 1090; bottom: 3.75rem;">
+			<div id="lowStockToast" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+				<div class="d-flex">
+					<div class="toast-body text-dark fw-semibold">
+						Low Stock Alert: <?= esc((string) $lowStockCount) ?> product<?= $lowStockCount > 1 ? 's are' : ' is' ?> currently low on stock.
+					</div>
+					<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+				</div>
+			</div>
+		</div>
+	<?php endif; ?>
+
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', () => {
@@ -414,6 +438,19 @@ $role = session()->get('role') ?? 'Employee';
 				overlay.addEventListener('click', closeSidebar);
 			}
 
+			const lowStockToastEl = document.getElementById('lowStockToast');
+			if (lowStockToastEl && window.bootstrap && window.bootstrap.Toast) {
+				const lowStockToast = new window.bootstrap.Toast(lowStockToastEl);
+				lowStockToast.show();
+			}
+
 			sidebarLinks.forEach(link => link.addEventListener('click', closeSidebar));
 		});
 	</script>
+	<style>
+		.low-stock-card-badge {
+			position: absolute;
+			top: 0.65rem;
+			right: 0.75rem;
+		}
+	</style>

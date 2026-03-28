@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\UserModel;
 use App\Models\RoleModel;
+use App\Models\ProductModel;
 
 class Auth extends BaseController
 {
@@ -96,14 +97,14 @@ class Auth extends BaseController
             return redirect()->to('/login')->with('error', 'Please log in to access the dashboard.');
         }
 
-        $userModel = new UserModel();
-        $roleModel = new RoleModel();
+        $productModel = new ProductModel();
+        $lowStockProducts = $productModel->getAllProducts('', 'low_stock');
 
-        // $data = [
-            
-        // ];
+        $data = [
+            'lowStockCount' => count($lowStockProducts),
+        ];
 
-        return view('Reusables/menu') . view('auth/dashboard');
+        return view('Reusables/menu') . view('auth/dashboard', $data);
     }
 
     public function logout()

@@ -21,6 +21,19 @@ foreach (($productBatches ?? []) as $batch) {
 		'expiration_date' => $batch['expiration_date'],
 	];
 }
+
+$stockInsInStock = [];
+$stockInsOutOfStock = [];
+foreach (($stockIns ?? []) as $stockIn) {
+	if ((int) ($stockIn['quantity'] ?? 0) <= 0) {
+		$stockInsOutOfStock[] = $stockIn;
+		continue;
+	}
+
+	$stockInsInStock[] = $stockIn;
+}
+
+$displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 ?>
 
 <div class="container-fluid px-4 px-lg-5 py-4 py-lg-5">
@@ -172,14 +185,17 @@ foreach (($productBatches ?? []) as $batch) {
 								</tr>
 							</thead>
 							<tbody>
-								<?php if (empty($stockIns)): ?>
+								<?php if (empty($displayStockIns)): ?>
 									<tr>
 										<td colspan="8" class="text-center text-muted py-5">No stock-in records yet.</td>
 									</tr>
 								<?php else: ?>
-									<?php foreach ($stockIns as $stockIn): ?>
+									<?php foreach ($displayStockIns as $index => $stockIn): ?>
+										<?php $isOutOfStock = (int) ($stockIn['quantity'] ?? 0) <= 0; ?>
 										<tr>
-											<td class="fw-semibold"><?= esc($stockIn['product_name']) ?></td>
+											<td class="fw-semibold <?= $isOutOfStock ? 'text-danger' : '' ?>">
+												<?= $isOutOfStock ? 'Out of Stock: ' : '' ?><?= esc($stockIn['product_name']) ?>
+											</td>
 											<td class="text-center"><?= esc($stockIn['quantity']) ?></td>
 											<td><?= esc($categoryNames[$stockIn['category_id'] ?? null] ?? 'N/A') ?></td>
 											<td class="text-center"><?= esc($unitTypeNames[$stockIn['unit_type_id'] ?? null] ?? 'N/A') ?></td>

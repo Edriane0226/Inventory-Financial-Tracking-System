@@ -213,40 +213,48 @@ $lowStockCount = (int) ($lowStockCount ?? 0);
 			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-graph-up text-primary me-2"></i>Financial Tracking</h2>
 			<div class="row g-3">
 				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-trending-up fs-3 text-success mb-3"></i>
-							<h6 class="card-title">Revenue Tracking</h6>
-							<p class="card-text text-muted small">Monitor total revenue</p>
+					<a href="<?= base_url('financial') ?>" class="text-decoration-none text-reset d-block h-100">
+						<div class="card h-100 border-0 shadow-sm">
+							<div class="card-body text-center">
+								<i class="bi bi-trending-up fs-3 text-success mb-3"></i>
+								<h6 class="card-title">Revenue Tracking</h6>
+								<p class="card-text text-muted small">Monitor total revenue</p>
+							</div>
 						</div>
-					</div>
+					</a>
 				</div>
 				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-trending-down fs-3 text-danger mb-3"></i>
-							<h6 class="card-title">Expenses Tracking</h6>
-							<p class="card-text text-muted small">Track business expenses</p>
+					<a href="<?= base_url('financial/expenses') ?>" class="text-decoration-none text-reset d-block h-100">
+						<div class="card h-100 border-0 shadow-sm">
+							<div class="card-body text-center">
+								<i class="bi bi-trending-down fs-3 text-danger mb-3"></i>
+								<h6 class="card-title">Expenses Tracking</h6>
+								<p class="card-text text-muted small">Track business expenses</p>
+							</div>
 						</div>
-					</div>
+					</a>
 				</div>
 				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-bar-chart fs-3 text-info mb-3"></i>
-							<h6 class="card-title">Net Income</h6>
-							<p class="card-text text-muted small">Revenue - Expenses</p>
+					<a href="<?= base_url('financial') ?>" class="text-decoration-none text-reset d-block h-100">
+						<div class="card h-100 border-0 shadow-sm">
+							<div class="card-body text-center">
+								<i class="bi bi-bar-chart fs-3 text-info mb-3"></i>
+								<h6 class="card-title">Net Income</h6>
+								<p class="card-text text-muted small">Revenue - Expenses</p>
+							</div>
 						</div>
-					</div>
+					</a>
 				</div>
 				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-pie-chart fs-3 text-warning mb-3"></i>
-							<h6 class="card-title">Financial Reports</h6>
-							<p class="card-text text-muted small">Comprehensive reports</p>
+					<a href="<?= base_url('financial') ?>" class="text-decoration-none text-reset d-block h-100">
+						<div class="card h-100 border-0 shadow-sm">
+							<div class="card-body text-center">
+								<i class="bi bi-pie-chart fs-3 text-warning mb-3"></i>
+								<h6 class="card-title">Financial Reports</h6>
+								<p class="card-text text-muted small">Comprehensive reports</p>
+							</div>
 						</div>
-					</div>
+					</a>
 				</div>
 			</div>
 		</section>

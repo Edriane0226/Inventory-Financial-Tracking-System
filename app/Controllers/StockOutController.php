@@ -154,6 +154,7 @@ class StockOutController extends BaseController
                 $receiptInserted = $receiptModel->insert([
                     'receipt_number' => $receiptNumber,
                     'total_amount' => 0,
+                    'created_at' => date('Y-m-d H:i:s'),
                 ]);
 
                 if ($receiptInserted === false) {
@@ -528,6 +529,7 @@ class StockOutController extends BaseController
             $prefix = $isCashier ? 'CASH' : 'INV';
             $receiptInserted = $receiptModel->insert([
                 'receipt_number' => $prefix . '-' . date('YmdHis') . '-' . random_int(1000, 9999),
+                'created_at' => date('Y-m-d H:i:s'),
             ]);
 
             if ($receiptInserted === false) {

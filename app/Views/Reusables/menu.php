@@ -212,6 +212,7 @@ $navItems = [
     ['label' => 'Stock-Out', 'icon' => 'bi-cart-check', 'url' => base_url('stock-out'), 'roles' => ['Owner', 'Employee']],
 	['label' => 'Cashier', 'icon' => 'bi-cash-stack', 'url' => base_url('stock-out/cashier'), 'roles' => ['Owner', 'Employee']],
 	['label' => 'Stock-In', 'icon' => 'bi-receipt', 'url' => base_url('stockin'), 'roles' => ['Owner', 'Employee']],
+    ['label' => 'Financial Analytics', 'icon' => 'bi-graph-up', 'url' => base_url('financial'), 'roles' => ['Owner']],
     ['label' => 'Users Management', 'icon' => 'bi-people', 'url' => base_url('/register'), 'roles' => ['Owner']],
     ['label' => 'Reports', 'icon' => 'bi-bar-chart-line', 'url' => base_url('reports'), 'roles' => ['Owner']],
 ];

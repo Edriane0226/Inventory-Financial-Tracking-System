@@ -1,12 +1,4 @@
 <div class="container-fluid px-4 px-lg-5 py-4 py-lg-5">
-	<div class="row mb-4">
-		<div class="col-12">
-			<div class="p-4 rounded-4 border bg-white shadow-sm">
-				<h2 class="h4 mb-1">Stock Out - Inventory</h2>
-				<p class="text-muted mb-0">Scan barcode, choose reason, and deduct stock from the lowest batch first.</p>
-			</div>
-		</div>
-	</div>
 
 	<?php if (session()->getFlashdata('success')): ?>
 		<div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
@@ -32,7 +24,7 @@
 		<div class="col-lg-4">
 			<div class="card border-0 shadow-sm rounded-4">
 				<div class="card-body p-4">
-					<h3 class="h5 mb-3">New Stock Out Entry</h3>
+					<h3 class="h5 mb-3">Stock Out</h3>
 					<form action="<?= base_url('stock-out/inventory') ?>" method="post" id="inventoryStockOutForm">
 						<?= csrf_field() ?>
 
@@ -85,7 +77,7 @@
 		<div class="col-lg-8">
 			<div class="card border-0 shadow-sm rounded-4 h-100">
 				<div class="card-body p-4">
-					<h3 class="h5 mb-3">Recent Stock Out Records</h3>
+					<h3 class="h5 mb-3">Records</h3>
 					<div class="table-responsive">
 						<table class="table align-middle">
 							<thead>

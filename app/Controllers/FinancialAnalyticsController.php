@@ -75,6 +75,67 @@ class FinancialAnalyticsController extends BaseController
             ->setBody($csv);
     }
 
+    public function breakdown()
+    {
+        $guard = $this->requireOwner();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $period = trim((string) $this->request->getGet('period'));
+        if ($period === '') {
+            $period = 'today';
+        }
+        if (!in_array($period, ['daily', 'weekly', 'monthly', 'today', 'date', 'month', 'all', 'batch'], true)) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'error' => 'Invalid period.',
+            ]);
+        }
+
+        $range = $this->resolveBreakdownRange($period);
+        if ($range === null) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'error' => 'Invalid period filter.',
+            ]);
+        }
+
+        [$from, $to, $label] = $range;
+        $receiptRows = $this->receiptRows($from, $to);
+        $paidBillRows = $this->paidBillRows($from, $to);
+        $productExpenseRows = $this->productExpenseRows($from, $to);
+
+        if ($period === 'batch') {
+            $receiptRows = [];
+            $paidBillRows = [];
+            $productExpenseRows = $this->filterBatchExpenseRows($productExpenseRows);
+        }
+
+        $receiptSubtotal = array_sum(array_map(static fn(array $row): float => (float) ($row['total_amount'] ?? 0), $receiptRows));
+        $paidBillSubtotal = array_sum(array_map(static fn(array $row): float => (float) ($row['amount'] ?? 0), $paidBillRows));
+        $productExpenseSubtotal = array_sum(array_map(static fn(array $row): float => (float) ($row['amount'] ?? 0), $productExpenseRows));
+
+        $revenue = round($receiptSubtotal, 2);
+        $expenses = round($paidBillSubtotal + $productExpenseSubtotal, 2);
+        $netIncome = round($revenue - $expenses, 2);
+        $profitMargin = $revenue > 0 ? round(($netIncome / $revenue) * 100, 2) : 0.0;
+        $rows = $this->mergeBreakdownRows($receiptRows, $paidBillRows, $productExpenseRows);
+
+        return $this->response->setJSON([
+            'period' => $period,
+            'label' => $label,
+            'from' => $from,
+            'to' => $to,
+            'rows' => $rows,
+            'totals' => [
+                'revenue' => $revenue,
+                'expenses' => $expenses,
+                'net_income' => $netIncome,
+                'profit_margin' => $profitMargin,
+                'row_count' => count($rows),
+            ],
+        ]);
+    }
+
     public function expenses()
     {
         $guard = $this->requireOwner();
@@ -549,6 +610,182 @@ class FinancialAnalyticsController extends BaseController
         $end = $start->modify('last day of this month')->setTime(23, 59, 59);
 
         return [$start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s')];
+    }
+
+    private function periodRange(string $period): array
+    {
+        $windows = $this->dateWindows();
+        if ($period === 'daily') {
+            return [$windows['daily_start'], $windows['daily_end']];
+        }
+
+        if ($period === 'weekly') {
+            return [$windows['weekly_start'], $windows['weekly_end']];
+        }
+
+        return [$windows['monthly_start'], $windows['monthly_end']];
+    }
+
+    private function resolveBreakdownRange(string $period): ?array
+    {
+        if (in_array($period, ['daily', 'weekly', 'monthly'], true)) {
+            [$start, $end] = $this->periodRange($period);
+            return [$start, $end, ucfirst($period)];
+        }
+
+        if (in_array($period, ['all', 'batch'], true)) {
+            $now = new \DateTimeImmutable('now');
+            $label = $period === 'batch' ? 'Batch expenses (all time)' : 'All time';
+            return ['1970-01-01 00:00:00', $now->format('Y-m-d H:i:s'), $label];
+        }
+
+        if ($period === 'today') {
+            $windows = $this->dateWindows();
+            return [$windows['daily_start'], $windows['daily_end'], 'Today'];
+        }
+
+        if ($period === 'date') {
+            $dateValue = trim((string) $this->request->getGet('date'));
+            if ($dateValue === '') {
+                return null;
+            }
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $dateValue);
+            if ($date === false) {
+                return null;
+            }
+
+            $start = $date->setTime(0, 0, 0);
+            $end = $date->setTime(23, 59, 59);
+            return [$start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'), $date->format('F j, Y')];
+        }
+
+        if ($period === 'month') {
+            $monthNumber = (int) $this->request->getGet('month');
+            $year = (int) $this->request->getGet('year');
+            if ($year < 2000 || $monthNumber < 1 || $monthNumber > 12) {
+                return null;
+            }
+
+            [$start, $end] = $this->monthRange($year, $monthNumber);
+            $labelDate = \DateTimeImmutable::createFromFormat('!Y-n', $year . '-' . $monthNumber);
+            $label = $labelDate ? $labelDate->format('F Y') : sprintf('%04d-%02d', $year, $monthNumber);
+            return [$start, $end, $label];
+        }
+
+        return null;
+    }
+
+    private function receiptRows(string $from, string $to): array
+    {
+        $db = db_connect();
+        if (!$db->tableExists('receipts') || !$db->fieldExists('created_at', 'receipts')) {
+            return [];
+        }
+
+        return $db->table('receipts')
+            ->select('id, receipt_number, total_amount, created_at')
+            ->where('created_at >=', $from)
+            ->where('created_at <=', $to)
+            ->orderBy('created_at', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    private function paidBillRows(string $from, string $to): array
+    {
+        $db = db_connect();
+        if (!$db->tableExists('bills')) {
+            return [];
+        }
+
+        return $db->table('bills')
+            ->select('id, bill_name, amount, bill_date, due_date, status, notes')
+            ->where('status', 'paid')
+            ->where('bill_date >=', substr($from, 0, 10))
+            ->where('bill_date <=', substr($to, 0, 10))
+            ->orderBy('bill_date', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    private function productExpenseRows(string $from, string $to): array
+    {
+        $db = db_connect();
+        if (!$db->tableExists('product_expenses')) {
+            return [];
+        }
+
+        $builder = $db->table('product_expenses');
+        $select = 'product_expenses.id, product_expenses.stock_in_id, product_expenses.amount, product_expenses.expense_date, product_expenses.source_label';
+
+        if ($db->tableExists('product_batch')) {
+            $select .= ', product_batch.batch_number';
+            $builder->join('product_batch', 'product_batch.stock_in_id = product_expenses.stock_in_id', 'left');
+        }
+
+        return $builder
+            ->select($select)
+            ->where('product_expenses.expense_date >=', $from)
+            ->where('product_expenses.expense_date <=', $to)
+            ->orderBy('product_expenses.expense_date', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    private function filterBatchExpenseRows(array $rows): array
+    {
+        $filtered = array_filter($rows, static fn(array $row): bool => (string) ($row['batch_number'] ?? '') !== '');
+
+        return array_values($filtered);
+    }
+
+    private function mergeBreakdownRows(array $receiptRows, array $paidBillRows, array $productExpenseRows): array
+    {
+        $rows = [];
+
+        foreach ($receiptRows as $row) {
+            $rows[] = [
+                'type' => 'Revenue',
+                'source' => 'Receipt',
+                'reference' => (string) ($row['receipt_number'] ?? $row['id'] ?? ''),
+                'date' => (string) ($row['created_at'] ?? ''),
+                'amount' => (float) ($row['total_amount'] ?? 0),
+                'notes' => '',
+            ];
+        }
+
+        foreach ($paidBillRows as $row) {
+            $rows[] = [
+                'type' => 'Expense',
+                'source' => 'Bill',
+                'reference' => (string) ($row['bill_name'] ?? ''),
+                'date' => (string) ($row['bill_date'] ?? ''),
+                'amount' => (float) ($row['amount'] ?? 0),
+                'notes' => (string) ($row['notes'] ?? ''),
+            ];
+        }
+
+        foreach ($productExpenseRows as $row) {
+            $reference = $row['stock_in_id'] ?? '';
+            $batchNumber = (string) ($row['batch_number'] ?? '');
+            if ($batchNumber !== '') {
+                $referenceLabel = 'Batch ' . $batchNumber;
+            } else {
+                $referenceLabel = $reference !== '' ? 'Stock-In #' . $reference : '';
+            }
+            $rows[] = [
+                'type' => 'Expense',
+                'source' => (string) ($row['source_label'] ?? 'Product Expense'),
+                'reference' => $referenceLabel,
+                'date' => (string) ($row['expense_date'] ?? ''),
+                'amount' => (float) ($row['amount'] ?? 0),
+                'notes' => '',
+            ];
+        }
+
+        usort($rows, static fn(array $a, array $b): int => strtotime((string) ($b['date'] ?? '')) <=> strtotime((string) ($a['date'] ?? '')));
+
+        return $rows;
     }
 
     private function buildMetrics(string $from, string $to): array

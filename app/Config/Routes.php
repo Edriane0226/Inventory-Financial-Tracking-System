@@ -32,3 +32,13 @@ $routes->post('stock-out/cashier', 'StockOutController::StockOutSold');
 $routes->get('stock-out/receipt/(:num)', 'StockOutController::printReceipt/$1');
 
 $routes->get('stock-out/barcode/(:any)', 'StockOutController::findByBarcode/$1');
+
+$routes->get('financial', 'FinancialAnalyticsController::index');
+$routes->get('financial/export-csv', 'FinancialAnalyticsController::exportMonthlyCsv');
+$routes->get('financial/expenses', 'FinancialAnalyticsController::expenses');
+$routes->post('financial/expenses/create', 'FinancialAnalyticsController::createExpense');
+$routes->post('financial/expenses/update/(:num)', 'FinancialAnalyticsController::updateExpense/$1');
+$routes->post('financial/expenses/delete/(:num)', 'FinancialAnalyticsController::deleteExpense/$1');
+$routes->post('financial/categories/create', 'FinancialAnalyticsController::createCategory');
+$routes->post('financial/categories/update/(:num)', 'FinancialAnalyticsController::updateCategory/$1');
+$routes->post('financial/categories/delete/(:num)', 'FinancialAnalyticsController::deleteCategory/$1');

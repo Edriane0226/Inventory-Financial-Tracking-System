@@ -98,10 +98,147 @@ class Auth extends BaseController
         }
 
         $productModel = new ProductModel();
-        $lowStockProducts = $productModel->getAllProducts('', 'low_stock');
+        $allProducts = $productModel->getAllProducts();
+
+        $summary = [
+            'total_products' => count($allProducts),
+            'in_stock' => 0,
+            'low_stock' => 0,
+            'out_of_stock' => 0,
+        ];
+        $inventoryValue = 0.0;
+        $lowStockProducts = [];
+
+        foreach ($allProducts as $product) {
+            $stockQuantity = (int) ($product['stock_quantity'] ?? 0);
+            $minimumStock = (int) ($product['minimum_stock'] ?? 0);
+            $price = (float) ($product['price'] ?? 0);
+
+            $status = $productModel->getStockStatus($stockQuantity, $minimumStock);
+            $inventoryValue += $stockQuantity * $price;
+
+            if ($status === 'In Stock') {
+                $summary['in_stock']++;
+                continue;
+            }
+
+            if ($status === 'Low Stock') {
+                $summary['low_stock']++;
+                $product['stock_status'] = $status;
+                $lowStockProducts[] = $product;
+                continue;
+            }
+
+            $summary['out_of_stock']++;
+        }
+
+        $db = db_connect();
+        $salesSummary = [
+            'today' => 0.0,
+            'week' => 0.0,
+            'month' => 0.0,
+            'receipts_today' => 0,
+            'receipts_week' => 0,
+            'receipts_month' => 0,
+        ];
+
+        $salesTrend = [
+            'labels' => [],
+            'values' => [],
+        ];
+
+        $recentReceipts = [];
+        $hasReceiptsTable = $db->tableExists('receipts');
+        $hasReceiptDates = $hasReceiptsTable
+            && $db->fieldExists('created_at', 'receipts')
+            && $db->fieldExists('total_amount', 'receipts');
+
+        $now = new \DateTimeImmutable('now');
+        $trendMap = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $day = $now->modify('-' . $i . ' days');
+            $dateKey = $day->format('Y-m-d');
+            $trendMap[$dateKey] = [
+                'label' => $day->format('M j'),
+                'total' => 0.0,
+            ];
+        }
+
+        if ($hasReceiptDates) {
+            $todayStart = $now->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+            $todayEnd = $now->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+            $weekStart = $now->modify('monday this week')->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+            $monthStart = $now->modify('first day of this month')->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+
+            $sumReceipts = static function (string $from, string $to) use ($db): float {
+                $row = $db->table('receipts')
+                    ->select('COALESCE(SUM(total_amount), 0) AS total')
+                    ->where('created_at >=', $from)
+                    ->where('created_at <=', $to)
+                    ->get()
+                    ->getRowArray();
+
+                return (float) ($row['total'] ?? 0);
+            };
+
+            $countReceipts = static function (string $from, string $to) use ($db): int {
+                $row = $db->table('receipts')
+                    ->select('COUNT(*) AS total')
+                    ->where('created_at >=', $from)
+                    ->where('created_at <=', $to)
+                    ->get()
+                    ->getRowArray();
+
+                return (int) ($row['total'] ?? 0);
+            };
+
+            $salesSummary['today'] = $sumReceipts($todayStart, $todayEnd);
+            $salesSummary['week'] = $sumReceipts($weekStart, $todayEnd);
+            $salesSummary['month'] = $sumReceipts($monthStart, $todayEnd);
+            $salesSummary['receipts_today'] = $countReceipts($todayStart, $todayEnd);
+            $salesSummary['receipts_week'] = $countReceipts($weekStart, $todayEnd);
+            $salesSummary['receipts_month'] = $countReceipts($monthStart, $todayEnd);
+
+            $trendStart = $now->modify('-6 days')->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+            $trendEnd = $todayEnd;
+
+            $rows = $db->table('receipts')
+                ->select('DATE(created_at) AS day, COALESCE(SUM(total_amount), 0) AS total')
+                ->where('created_at >=', $trendStart)
+                ->where('created_at <=', $trendEnd)
+                ->groupBy('DATE(created_at)')
+                ->orderBy('day', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            foreach ($rows as $row) {
+                $day = (string) ($row['day'] ?? '');
+                if (isset($trendMap[$day])) {
+                    $trendMap[$day]['total'] = (float) ($row['total'] ?? 0);
+                }
+            }
+
+            $recentReceipts = $db->table('receipts')
+                ->select('receipt_number, total_amount, created_at')
+                ->orderBy('created_at', 'DESC')
+                ->limit(5)
+                ->get()
+                ->getResultArray();
+        }
+
+        $salesTrend = [
+            'labels' => array_values(array_column($trendMap, 'label')),
+            'values' => array_values(array_column($trendMap, 'total')),
+        ];
 
         $data = [
             'lowStockCount' => count($lowStockProducts),
+            'summary' => $summary,
+            'inventoryValue' => round($inventoryValue, 2),
+            'salesSummary' => $salesSummary,
+            'salesTrend' => $salesTrend,
+            'recentReceipts' => $recentReceipts,
+            'lowStockItems' => array_slice($lowStockProducts, 0, 5),
         ];
 
         return view('Reusables/menu') . view('auth/dashboard', $data);

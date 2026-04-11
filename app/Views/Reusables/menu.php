@@ -239,7 +239,7 @@ $navGroups = [
         ],
     ],
     [
-        'label' => 'Reports',
+        'label' => 'Reports & Analytics',
         'icon' => 'bi-graph-up',
         'roles' => ['Owner'],
         'items' => [
@@ -249,7 +249,7 @@ $navGroups = [
         ],
     ],
     [
-        'label' => 'Administration',
+        'label' => 'Management',
         'icon' => 'bi-sliders',
         'roles' => ['Owner'],
         'items' => [

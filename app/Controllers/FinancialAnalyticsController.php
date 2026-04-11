@@ -6,6 +6,7 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Bill;
 use App\Models\ProductExpense;
+use App\Services\AuditTrailService;
 
 class FinancialAnalyticsController extends BaseController
 {
@@ -161,6 +162,20 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->withInput()->with('error', 'Could not save expense record.');
         }
 
+        $created = $expenseModel->find((int) $inserted);
+        try {
+            $this->writeAudit(
+                'create',
+                'expense',
+                (string) $inserted,
+                'Created expense record',
+                null,
+                $created
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->withInput()->with('error', $exception->getMessage());
+        }
+
         return redirect()->to('/financial/expenses')->with('success', 'Expense recorded successfully.');
     }
 
@@ -197,6 +212,20 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->withInput()->with('error', 'Could not save bill.');
         }
 
+        $created = (new Bill())->find((int) $inserted);
+        try {
+            $this->writeAudit(
+                'create',
+                'bill',
+                (string) $inserted,
+                'Created bill ' . (string) ($created['bill_name'] ?? ''),
+                null,
+                $created
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->withInput()->with('error', $exception->getMessage());
+        }
+
         return redirect()->to('/financial/expenses')->with('success', 'Bill saved successfully.');
     }
 
@@ -219,7 +248,9 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $updated = (new Bill())->update($id, [
+        $billModel = new Bill();
+        $before = $billModel->find($id);
+        $updated = $billModel->update($id, [
             'bill_name' => trim((string) $this->request->getPost('bill_name')),
             'amount' => (float) $this->request->getPost('amount'),
             'bill_date' => (string) $this->request->getPost('bill_date'),
@@ -232,6 +263,20 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->withInput()->with('error', 'Could not update bill.');
         }
 
+        $after = $billModel->find($id);
+        try {
+            $this->writeAudit(
+                'update',
+                'bill',
+                (string) $id,
+                'Updated bill ' . (string) ($after['bill_name'] ?? ''),
+                $before,
+                $after
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->withInput()->with('error', $exception->getMessage());
+        }
+
         return redirect()->to('/financial/expenses')->with('success', 'Bill updated successfully.');
     }
 
@@ -242,7 +287,23 @@ class FinancialAnalyticsController extends BaseController
             return $guard;
         }
 
-        (new Bill())->delete($id);
+        $billModel = new Bill();
+        $before = $billModel->find($id);
+        $billModel->delete($id);
+
+        try {
+            $this->writeAudit(
+                'delete',
+                'bill',
+                (string) $id,
+                'Deleted bill ' . (string) ($before['bill_name'] ?? ''),
+                $before,
+                null
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->with('error', $exception->getMessage());
+        }
+
         return redirect()->to('/financial/expenses')->with('success', 'Bill deleted successfully.');
     }
 
@@ -264,7 +325,9 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $updated = (new Expense())->update($id, [
+        $expenseModel = new Expense();
+        $before = $expenseModel->find($id);
+        $updated = $expenseModel->update($id, [
             'category_id' => (int) $this->request->getPost('category_id'),
             'amount' => (float) $this->request->getPost('amount'),
             'note' => trim((string) $this->request->getPost('note')),
@@ -273,6 +336,20 @@ class FinancialAnalyticsController extends BaseController
 
         if ($updated === false) {
             return redirect()->to('/financial/expenses')->withInput()->with('error', 'Could not update expense record.');
+        }
+
+        $after = $expenseModel->find($id);
+        try {
+            $this->writeAudit(
+                'update',
+                'expense',
+                (string) $id,
+                'Updated expense record',
+                $before,
+                $after
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->withInput()->with('error', $exception->getMessage());
         }
 
         return redirect()->to('/financial/expenses')->with('success', 'Expense updated successfully.');
@@ -285,7 +362,23 @@ class FinancialAnalyticsController extends BaseController
             return $guard;
         }
 
-        (new Expense())->delete($id);
+        $expenseModel = new Expense();
+        $before = $expenseModel->find($id);
+        $expenseModel->delete($id);
+
+        try {
+            $this->writeAudit(
+                'delete',
+                'expense',
+                (string) $id,
+                'Deleted expense record',
+                $before,
+                null
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->with('error', $exception->getMessage());
+        }
+
         return redirect()->to('/financial/expenses')->with('success', 'Expense deleted successfully.');
     }
 
@@ -313,6 +406,20 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->withInput()->with('error', 'Could not create expense category.');
         }
 
+        $created = (new ExpenseCategory())->find((int) $inserted);
+        try {
+            $this->writeAudit(
+                'create',
+                'expense_category',
+                (string) $inserted,
+                'Created expense category ' . (string) ($created['name'] ?? ''),
+                null,
+                $created
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->withInput()->with('error', $exception->getMessage());
+        }
+
         return redirect()->to('/financial/expenses')->with('success', 'Expense category created successfully.');
     }
 
@@ -332,13 +439,29 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $updated = (new ExpenseCategory())->update($id, [
+        $categoryModel = new ExpenseCategory();
+        $before = $categoryModel->find($id);
+        $updated = $categoryModel->update($id, [
             'name' => trim((string) $this->request->getPost('name')),
             'is_active' => (int) $this->request->getPost('is_active'),
         ]);
 
         if ($updated === false) {
             return redirect()->to('/financial/expenses')->withInput()->with('error', 'Could not update expense category.');
+        }
+
+        $after = $categoryModel->find($id);
+        try {
+            $this->writeAudit(
+                'update',
+                'expense_category',
+                (string) $id,
+                'Updated expense category ' . (string) ($after['name'] ?? ''),
+                $before,
+                $after
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->withInput()->with('error', $exception->getMessage());
         }
 
         return redirect()->to('/financial/expenses')->with('success', 'Expense category updated successfully.');
@@ -356,8 +479,48 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->with('error', 'Category cannot be deleted because it is used by existing expenses.');
         }
 
-        (new ExpenseCategory())->delete($id);
+        $categoryModel = new ExpenseCategory();
+        $before = $categoryModel->find($id);
+        $categoryModel->delete($id);
+
+        try {
+            $this->writeAudit(
+                'delete',
+                'expense_category',
+                (string) $id,
+                'Deleted expense category ' . (string) ($before['name'] ?? ''),
+                $before,
+                null
+            );
+        } catch (\RuntimeException $exception) {
+            return redirect()->to('/financial/expenses')->with('error', $exception->getMessage());
+        }
+
         return redirect()->to('/financial/expenses')->with('success', 'Expense category deleted successfully.');
+    }
+
+    private function writeAudit(
+        string $action,
+        string $entityType,
+        ?string $entityId,
+        string $summary,
+        ?array $beforeData,
+        ?array $afterData
+    ): void {
+        (new AuditTrailService())->log([
+            'actor_user_id' => (int) (session()->get('user_id') ?? 0) ?: null,
+            'actor_role' => (string) (session()->get('role') ?? ''),
+            'module' => 'financial',
+            'action' => $action,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'summary' => $summary,
+            'before_data' => $beforeData,
+            'after_data' => $afterData,
+            'request_method' => $this->request->getMethod(),
+            'request_path' => $this->request->getPath(),
+            'ip_address' => $this->request->getIPAddress(),
+        ]);
     }
 
     private function dateWindows(): array

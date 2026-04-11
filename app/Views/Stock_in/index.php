@@ -37,14 +37,6 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 ?>
 
 <div class="container-fluid px-4 px-lg-5 py-4 py-lg-5">
-	<div class="row mb-4">
-		<div class="col-12">
-			<div class="p-4 rounded-4 border bg-white shadow-sm">
-				<h2 class="h4 mb-1">Stock In</h2>
-				<p class="text-muted mb-0">Create incoming stock records for Owner and Employee accounts.</p>
-			</div>
-		</div>
-	</div>
 
 	<?php if (session()->getFlashdata('success')): ?>
 		<div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
@@ -138,16 +130,7 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 							<input type="date" class="form-control" id="stockin_date" name="stockin_date" value="<?= esc(old('stockin_date', date('Y-m-d'))) ?>" required>
 						</div>
 
-						<div class="mb-3 p-3 bg-light rounded-3 border border-info">
-							<label class="form-label fw-semibold mb-2" for="barcode">
-								<i class="bi bi-barcode"></i> Barcode
-							</label>
-							<input type="text" class="form-control form-control-lg font-monospace" id="barcode" name="barcode" value="<?= esc(old('barcode')) ?>" readonly style="background-color: #fff; letter-spacing: 2px; font-weight: 500;">
-							<div class="barcode-preview-wrap mt-2 bg-white border rounded p-2 text-center">
-								<svg id="barcodePreview" class="barcode-svg" aria-label="Generated barcode preview"></svg>
-							</div>
-							<small class="text-muted d-block mt-2"><i class="bi bi-info-circle"></i> Generated on save using server-side EAN-13</small>
-						</div>
+						
 
 						<button type="submit" class="btn btn-primary w-100 btn-lg">Save Stock In</button>
 					</form>

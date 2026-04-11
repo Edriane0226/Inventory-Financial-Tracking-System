@@ -6,7 +6,7 @@ $filters = $filters ?? [];
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
             <h2 class="h4 mb-1">Audit Trail</h2>
-            <p class="text-muted mb-0">Track create, update, and delete activities by function.</p>
+           
         </div>
     </div>
 

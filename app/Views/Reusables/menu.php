@@ -253,7 +253,8 @@ $navGroups = [
         'icon' => 'bi-sliders',
         'roles' => ['Owner'],
         'items' => [
-            ['label' => 'Users Management', 'icon' => 'bi-people', 'path' => 'register', 'roles' => ['Owner']]
+            ['label' => 'Users Management', 'icon' => 'bi-people', 'path' => 'register', 'roles' => ['Owner']],
+            ['label' => 'Audit Trail', 'icon' => 'bi-clipboard-data', 'path' => 'management/audit-trail', 'roles' => ['Owner']],
         ],
     ],
 ];

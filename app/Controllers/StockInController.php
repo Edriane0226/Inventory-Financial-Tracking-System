@@ -9,6 +9,7 @@ use App\Models\Products;
 use App\Models\UnitTypes;
 use App\Models\ProductBatch;
 use App\Models\SalesPrice;
+use App\Models\ProductExpense;
 use App\Services\BarcodeService;
 
 class StockInController extends BaseController
@@ -172,6 +173,21 @@ class StockInController extends BaseController
                     $capitalErrors = implode(' ', $capitalModel->errors());
                     return redirect()->back()->withInput()->with('error', 'Could not save capital row. ' . ($capitalErrors ?: 'Please check database schema.'));
                 }
+            }
+
+            $productExpenseModel = new ProductExpense();
+            $productExpenseInserted = $productExpenseModel->insert([
+                'stock_in_id' => $stockInID,
+                'amount' => $incomingCapital,
+                'expense_date' => $stockInDate,
+                'source_label' => 'stock-in-capital',
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            if ($productExpenseInserted === false) {
+                $db->transRollback();
+                $expenseErrors = implode(' ', $productExpenseModel->errors());
+                return redirect()->back()->withInput()->with('error', 'Could not save product expense row. ' . ($expenseErrors ?: 'Please check database schema.'));
             }
 
             $productRow = $productsModel->where('stock_in_id', $stockInID)->first();

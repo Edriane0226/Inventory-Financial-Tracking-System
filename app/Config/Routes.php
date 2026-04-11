@@ -45,3 +45,7 @@ $routes->post('financial/expenses/delete/(:num)', 'FinancialAnalyticsController:
 $routes->post('financial/categories/create', 'FinancialAnalyticsController::createCategory');
 $routes->post('financial/categories/update/(:num)', 'FinancialAnalyticsController::updateCategory/$1');
 $routes->post('financial/categories/delete/(:num)', 'FinancialAnalyticsController::deleteCategory/$1');
+
+$routes->get('management/audit-trail', 'AuditTrailController::index');
+$routes->get('management/audit-trail/export-csv', 'AuditTrailController::exportCsv');
+$routes->get('management/audit-trail/export-pdf', 'AuditTrailController::exportPdf');

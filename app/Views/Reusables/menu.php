@@ -269,7 +269,7 @@ $isItemActive = static function (string $current, string $itemPath): bool {
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top">
     <div class="container-fluid px-4">
-        <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="<?= base_url() ?>">
+		<a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="<?= session()->get('logged_in') ? base_url('dashboard') : base_url() ?>">
             <span class="bg-primary text-white rounded-3 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
                 <i class="bi bi-box-seam"></i>
             </span>

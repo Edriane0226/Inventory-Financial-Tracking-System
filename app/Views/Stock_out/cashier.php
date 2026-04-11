@@ -1,12 +1,4 @@
 <div class="container-fluid px-4 px-lg-5 py-4 py-lg-5">
-	<div class="row mb-4">
-		<div class="col-12">
-			<div class="p-4 rounded-4 border bg-white shadow-sm">
-				<h2 class="h4 mb-1">Stock Out - Cashier</h2>
-				<p class="text-muted mb-0">Scan barcode and deduct sold quantity. Reason is automatically set to Sold.</p>
-			</div>
-		</div>
-	</div>
 
 	<?php if (session()->getFlashdata('success')): ?>
 		<div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>

@@ -428,21 +428,21 @@ $lowStockCount = (int) ($lowStockCount ?? 0);
 		</div>
 	<?php endif; ?>
 
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', () => {
 			const body = document.body;
 			const toggleBtn = document.getElementById('sidebarToggle');
 			const overlay = document.querySelector('.sidebar-overlay');
 			const sidebarLinks = document.querySelectorAll('.sidebar .sidebar-link');
+			const hasSidebar = document.querySelector('.sidebar') !== null;
 
 			const closeSidebar = () => body.classList.remove('sidebar-open');
 
-			if (toggleBtn) {
+			if (toggleBtn && hasSidebar) {
 				toggleBtn.addEventListener('click', () => body.classList.toggle('sidebar-open'));
 			}
 
-			if (overlay) {
+			if (overlay && hasSidebar) {
 				overlay.addEventListener('click', closeSidebar);
 			}
 
@@ -452,7 +452,9 @@ $lowStockCount = (int) ($lowStockCount ?? 0);
 				lowStockToast.show();
 			}
 
-			sidebarLinks.forEach(link => link.addEventListener('click', closeSidebar));
+			if (hasSidebar) {
+				sidebarLinks.forEach(link => link.addEventListener('click', closeSidebar));
+			}
 		});
 	</script>
 	<style>

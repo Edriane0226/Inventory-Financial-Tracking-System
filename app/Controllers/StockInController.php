@@ -9,6 +9,7 @@ use App\Models\Products;
 use App\Models\UnitTypes;
 use App\Models\ProductBatch;
 use App\Models\SalesPrice;
+use App\Services\BarcodeService;
 
 class StockInController extends BaseController
 {
@@ -49,7 +50,6 @@ class StockInController extends BaseController
                 'expiration_date' => 'required|date',
                 'capital' => 'required|decimal',
                 'stockin_date' => 'required|date',
-                'barcode' => 'required|alpha_numeric_space',
                 'sales_price' => 'required|decimal',
                 'unit_type' => 'required',
             ]);
@@ -75,6 +75,18 @@ class StockInController extends BaseController
 
             $db = \Config\Database::connect();
             $db->transBegin();
+            $barcodeService = new BarcodeService();
+
+            try {
+                $resolvedBarcode = $barcodeService->resolveForProduct(
+                    $productName,
+                    (int) $category['id'],
+                    (int) $unitType['id'],
+                );
+            } catch (\RuntimeException $exception) {
+                $db->transRollback();
+                return redirect()->back()->withInput()->with('error', $exception->getMessage());
+            }
 
             $existingStockRow = $db->table('stock_in si')
                 ->select('si.id, si.quantity')
@@ -111,7 +123,7 @@ class StockInController extends BaseController
                     'category_id' => $category['id'],
                     'unit_type_id' => $unitType['id'],
                     'stock_in_date' => $stockInDate,
-                    'barcode' => $this->request->getPost('barcode'),
+                    'barcode' => $resolvedBarcode,
                     'recorded_by' => session()->get('user_id'),
                 ]);
 

@@ -58,6 +58,7 @@ $visibleActions = array_values(array_filter(
 
 			
 
+			<?php if ($role === 'Owner'): ?>
 			<section class="mb-5">
 				<div class="row g-3">
 					<div class="col-md-6 col-xl-4">
@@ -242,6 +243,7 @@ $visibleActions = array_values(array_filter(
 				</div>
 			</section>
 
+			<?php endif; ?>
 			<section class="mb-5">
 				<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
 					<h2 class="h5 mb-0">Quick Actions</h2>
@@ -265,7 +267,7 @@ $visibleActions = array_values(array_filter(
 	</div>
 </div>
 
-<?php if ($lowStockCount > 0): ?>
+<?php if ($role === 'Owner' && $lowStockCount > 0): ?>
 	<div class="position-fixed end-0 p-3" style="z-index: 1090; bottom: 3.75rem;">
 		<div id="lowStockToast" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
 			<div class="d-flex">

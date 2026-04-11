@@ -7,6 +7,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\UserModel;
 use App\Models\RoleModel;
 use App\Models\ProductModel;
+use App\Services\AuditTrailService;
 
 class Auth extends BaseController
 {
@@ -43,13 +44,38 @@ class Auth extends BaseController
             }
 
             $userModel = new UserModel();
-            $userModel->save([
+            $newUserId = $userModel->insert([
                 'first_name' => $this->request->getPost('first_name'),
                 'last_name' => $this->request->getPost('last_name'),
                 'email' => $this->request->getPost('email'),
                 'password_hash' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
                 'role_id' => $this->request->getPost('role_id')
-            ]);
+            ], true);
+
+            if ($newUserId === false) {
+                return redirect()->back()->withInput()->with('error', 'Could not register user.');
+            }
+
+            $createdUser = $userModel->select('id, first_name, last_name, email, role_id')->find((int) $newUserId);
+
+            try {
+                (new AuditTrailService())->log([
+                    'actor_user_id' => (int) (session()->get('user_id') ?? 0) ?: null,
+                    'actor_role' => (string) (session()->get('role') ?? ''),
+                    'module' => 'user_management',
+                    'action' => 'create',
+                    'entity_type' => 'user',
+                    'entity_id' => (string) $newUserId,
+                    'summary' => 'Registered user ' . (string) ($createdUser['email'] ?? ''),
+                    'before_data' => null,
+                    'after_data' => $createdUser,
+                    'request_method' => $this->request->getMethod(),
+                    'request_path' => $this->request->getPath(),
+                    'ip_address' => $this->request->getIPAddress(),
+                ]);
+            } catch (\RuntimeException $exception) {
+                return redirect()->back()->withInput()->with('error', $exception->getMessage());
+            }
 
             return redirect()->to('/register')->with('success', 'User registered successfully.');
         }

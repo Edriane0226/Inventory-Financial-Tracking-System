@@ -56,7 +56,7 @@
                                             }
                                             sort($uniqueCategories);
                                             foreach ($uniqueCategories as $c) {
-                                                echo '<option value="' . esc($c) . '">' . esc($c) . '</option>';
+                                                echo '<option value="' . esc((string) $c) . '">' . esc((string) $c) . '</option>';
                                             }
                                         }
                                     ?>
@@ -76,7 +76,7 @@
                                             }
                                             sort($uniqueBatches);
                                             foreach ($uniqueBatches as $b) {
-                                                echo '<option value="' . esc($b) . '">' . esc($b) . '</option>';
+                                                echo '<option value="' . esc((string) $b) . '">' . esc((string) $b) . '</option>';
                                             }
                                         }
                                     ?>

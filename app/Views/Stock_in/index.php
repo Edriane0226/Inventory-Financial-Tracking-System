@@ -74,8 +74,11 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 	<div class="row g-4">
 		<div class="col-lg-3">
 			<div class="card border-0 shadow-sm rounded-4">
-				<div class="card-body p-4">
-					<h3 class="h5 mb-3">New Stock In Entry</h3>
+				<div class="card-body p-4 p-xl-4">
+					<div class="mb-4">
+						<h3 class="h5 mb-1">New Stock In Entry</h3>
+						<p class="text-muted small mb-0">Add stock details, pricing, and batch information.</p>
+					</div>
 					<form action="<?= base_url('stockin') ?>" method="post">
 						<?= csrf_field() ?>
 
@@ -94,9 +97,9 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 								<select class="form-select" id="unit_type" name="unit_type" required>
 									<option value="">Select unit</option>
 									<?php foreach ($unitTypesList as $unitType): ?>
-														<?php $unitTypeName = is_array($unitType) ? (string) ($unitType['unit_type_name'] ?? '') : ''; ?>
-														<option value="<?= esc($unitTypeName) ?>" <?= old('unit_type') === $unitTypeName ? 'selected' : '' ?>>
-															<?= esc($unitTypeName) ?>
+										<?php $unitTypeName = is_array($unitType) ? (string) ($unitType['unit_type_name'] ?? '') : ''; ?>
+										<option value="<?= esc($unitTypeName) ?>" <?= old('unit_type') === $unitTypeName ? 'selected' : '' ?>>
+											<?= esc($unitTypeName) ?>
 										</option>
 									<?php endforeach; ?>
 								</select>
@@ -115,6 +118,10 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 										</option>
 									<?php endforeach; ?>
 								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label" for="stockin_date">Stock In Date</label>
+								<input type="date" class="form-control" id="stockin_date" name="stockin_date" value="<?= esc((string) old('stockin_date', date('Y-m-d'))) ?>" required>
 							</div>
 						</div>
 
@@ -140,14 +147,7 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 							</div>
 						</div>
 
-						<div class="mb-3 mt-3">
-							<label class="form-label" for="stockin_date">Stock In Date</label>
-							<input type="date" class="form-control" id="stockin_date" name="stockin_date" value="<?= esc((string) old('stockin_date', date('Y-m-d'))) ?>" required>
-						</div>
-
-						
-
-						<button type="submit" class="btn btn-primary w-100 btn-lg">Save Stock In</button>
+						<button type="submit" class="btn btn-primary w-100 btn-lg mt-2">Save Stock In</button>
 					</form>
 				</div>
 			</div>
@@ -155,8 +155,13 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 
 		<div class="col-lg-9">
 			<div class="card border-0 shadow-sm rounded-4 h-100">
-				<div class="card-body p-4">
-					<h3 class="h5 mb-4">Recent Stock In Records</h3>
+				<div class="card-body p-4 p-xl-4">
+					<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+						<div>
+							<h3 class="h5 mb-1">Recent Stock In Records</h3>
+							<p class="text-muted small mb-0">Quantity, category, batch, barcode, and pricing at a glance.</p>
+						</div>
+					</div>
 
 					<div class="table-responsive">
 						<table class="table align-middle table-hover stockin-records-table">
@@ -206,7 +211,7 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 											$stockInUnitTypeName = $unitTypeNames[$stockInUnitTypeId] ?? 'N/A';
 										?>
 										<tr>
-											<td class="fw-semibold <?= $isOutOfStock ? 'text-danger' : '' ?>">
+											<td class="fw-semibold <?= $isOutOfStock ? 'text-danger' : '' ?> stockin-product-cell">
 												<?= $isOutOfStock ? 'Out of Stock: ' : '' ?><?= esc($stockInProductName) ?>
 											</td>
 											<td class="text-center"><?= esc((string) $stockInQuantity) ?></td>
@@ -215,11 +220,16 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 											<td><?= esc($stockInBatchNumber) ?></td>
 											<td class="text-center barcode-cell">
 												<?php if ($stockInBarcode !== '-'): ?>
-													<svg
-														class="table-barcode"
-														data-barcode="<?= esc($stockInBarcode) ?>"
+													<input
+														type="text"
+														class="form-control form-control-sm text-center barcode-copy-input"
+														value="<?= esc($stockInBarcode) ?>"
+														readonly
 														aria-label="Barcode <?= esc($stockInBarcode) ?>"
-													></svg>
+														title="Copy this barcode"
+														onfocus="this.select();"
+														onclick="this.select();"
+													>
 												<?php else: ?>
 													<span class="text-muted">-</span>
 												<?php endif; ?>
@@ -261,34 +271,31 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 		font-size: 1rem;
 	}
 
-	.stockin-records-table code {
-		display: inline-block;
-		max-width: 7.2rem;
-		font-size: 0.94rem;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		text-align: center;
-	}
-
-	.barcode-preview-wrap {
-		min-height: 64px;
-	}
-
-	.barcode-svg {
-		max-width: 100%;
-		height: 68px;
-	}
-
-	.table-barcode {
-		width: 120px;
-		height: 48px;
-		display: block;
-		margin: 0 auto;
-	}
-
 	.stockin-records-table td.barcode-cell {
 		vertical-align: middle;
+		white-space: nowrap;
+		text-align: left;
+		padding-left: 0.65rem;
+		padding-right: 0.65rem;
+	}
+
+	.stockin-records-table td:nth-child(5) {
+		padding-left: 0.65rem;
+		padding-right: 0.65rem;
+	}
+
+	.barcode-copy-input {
+		width: 100%;
+		max-width: 10rem;
+		display: block;
+		margin: 0;
+		font-family: monospace;
+		cursor: text;
+		letter-spacing: 0.04em;
+	}
+
+	.stockin-product-cell {
+		line-height: 1.25;
 	}
 
 	.stockin-records-table td:nth-child(2),
@@ -298,61 +305,3 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 		white-space: nowrap;
 	}
 </style>
-
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script>
-	const renderBarcodeSvg = (selector, value, options = {}) => {
-		const target = document.querySelector(selector);
-		if (!target || !value) {
-			return;
-		}
-
-		try {
-			JsBarcode(target, value, {
-				format: 'CODE128',
-				displayValue: true,
-				fontSize: 12,
-				textMargin: 2,
-				margin: 2,
-				lineColor: '#111827',
-				...options,
-			});
-		} catch (error) {
-			target.innerHTML = '';
-		}
-	};
-
-	const renderTableBarcodes = () => {
-		document.querySelectorAll('.table-barcode').forEach((svgEl) => {
-			const value = svgEl.getAttribute('data-barcode');
-			if (!value) {
-				return;
-			}
-
-			try {
-				JsBarcode(svgEl, value, {
-					format: 'CODE128',
-					displayValue: true,
-					fontSize: 10,
-					textMargin: 1,
-					margin: 1,
-					width: 1.1,
-					height: 24,
-					lineColor: '#111827',
-				});
-			} catch (error) {
-				svgEl.outerHTML = '<span class="text-muted">Invalid</span>';
-			}
-		});
-	};
-
-	// Render barcode preview on page load when a value is already present.
-	window.addEventListener('load', () => {
-		const barcodeField = document.getElementById('barcode');
-		const barcodeValue = (barcodeField?.value ?? '').trim();
-		if (barcodeValue !== '') {
-			renderBarcodeSvg('#barcodePreview', barcodeValue, { width: 1.4, height: 48 });
-		}
-		renderTableBarcodes();
-	});
-</script>

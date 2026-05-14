@@ -44,19 +44,86 @@ $visibleActions = array_values(array_filter(
     $quickActions,
     static fn(array $action): bool => in_array($role, $action['roles'], true)
 ));
+
+$quickActionsTitle = $role === 'Owner' ? 'Quick Actions' : 'Employee Tools';
+$quickActionsHint = $role === 'Owner'
+	? 'Only tools that are ready to use'
+	: 'Daily operations shortcuts';
 ?>
 
-<div class="dashboard-shell">
+<div class="dashboard-shell analytics-dashboard">
 	<div class="dashboard-main">
 		<main class="content-area px-3 px-lg-4 py-4 py-lg-5">
 			<?php if (session()->getFlashdata('success')): ?>
-				<div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
+				<div class="alert alert-success"><?= esc((string) session()->getFlashdata('success')) ?></div>
 			<?php endif; ?>
 			<?php if (session()->getFlashdata('error')): ?>
-				<div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
+				<div class="alert alert-danger"><?= esc((string) session()->getFlashdata('error')) ?></div>
 			<?php endif; ?>
 
 			
+
+			<?php if ($role !== 'Owner'): ?>
+			<section class="employee-hero mb-5">
+				<div class="row g-3 align-items-stretch">
+					<div class="col-lg-8">
+						<div class="dashboard-hero h-100">
+							<div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+								<div>
+									<p class="text-uppercase small fw-semibold mb-2 text-secondary">Employee Dashboard</p>
+									<h1 class="h3 mb-2">Welcome back, <?= esc($displayName) ?>.</h1>
+								</div>
+								<span class="role-pill"><i class="bi bi-person-badge"></i><?= esc((string) $role) ?></span>
+							</div>
+							<div class="row g-3 mt-1">
+								<div class="col-md-4">
+									<div class="mini-stat-card">
+										<div class="mini-stat-icon"><i class="bi bi-check-circle"></i></div>
+										<div>
+											<div class="mini-stat-label">In Stock</div>
+											<div class="mini-stat-value"><?= esc((string) ($summary['in_stock'] ?? 0)) ?></div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="mini-stat-card mini-stat-warn">
+										<div class="mini-stat-icon"><i class="bi bi-exclamation-circle"></i></div>
+										<div>
+											<div class="mini-stat-label">Low Stock</div>
+											<div class="mini-stat-value"><?= esc((string) ($summary['low_stock'] ?? 0)) ?></div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="mini-stat-card mini-stat-danger">
+										<div class="mini-stat-icon"><i class="bi bi-x-circle"></i></div>
+										<div>
+											<div class="mini-stat-label">Out of Stock</div>
+											<div class="mini-stat-value"><?= esc((string) ($summary['out_of_stock'] ?? 0)) ?></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-4">
+						<div class="sales-card h-100">
+							<div class="d-flex justify-content-between align-items-start mb-3">
+								<div class="sales-icon"><i class="bi bi-cash-coin"></i></div>
+								<span class="sales-badge"><?= date('M d') ?></span>
+							</div>
+							<div class="sales-label">Sales Today</div>
+							<div class="sales-value">₱<?= esc(number_format((float) ($salesSummary['today'] ?? 0), 2)) ?></div>
+							<div class="sales-subtext"><?= esc((string) ($salesSummary['receipts_today'] ?? 0)) ?> receipts</div>
+							<div class="employee-note mt-3">
+								<i class="bi bi-lightning-charge-fill"></i>
+								<span>Tip: Use barcode scan in cashier for faster checkout.</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<?php endif; ?>
 
 			<?php if ($role === 'Owner'): ?>
 			<section class="mb-5">
@@ -246,8 +313,8 @@ $visibleActions = array_values(array_filter(
 			<?php endif; ?>
 			<section class="mb-5">
 				<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-					<h2 class="h5 mb-0">Quick Actions</h2>
-					<span class="text-muted small">Only tools that are ready to use</span>
+					<h2 class="h5 mb-0"><?= esc($quickActionsTitle) ?></h2>
+					<span class="text-muted small"><?= esc($quickActionsHint) ?></span>
 				</div>
 				<div class="row g-3">
 					<?php foreach ($visibleActions as $action): ?>
@@ -418,9 +485,7 @@ $visibleActions = array_values(array_filter(
 		position: absolute;
 		inset: -2rem -2rem auto -2rem;
 		height: 45vh;
-		background:
-			radial-gradient(circle at 8% 10%, rgba(14, 165, 233, 0.18), transparent 55%),
-			radial-gradient(circle at 78% 0%, rgba(16, 185, 129, 0.18), transparent 55%);
+		background: transparent;
 		pointer-events: none;
 		z-index: 0;
 	}
@@ -431,11 +496,187 @@ $visibleActions = array_values(array_filter(
 	}
 
 	.analytics-dashboard .dashboard-hero {
-		background: linear-gradient(120deg, rgba(14, 165, 233, 0.2), rgba(16, 185, 129, 0.2));
-		border: 1px solid rgba(14, 165, 233, 0.2);
+		background: transparent;
+		border: none;
 		border-radius: 26px;
 		padding: 2rem;
-		box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+		box-shadow: none;
+	}
+
+	.employee-hero .dashboard-hero {
+		position: relative;
+		overflow: hidden;
+		padding: 2.5rem;
+	}
+
+	.employee-hero .dashboard-hero::after {
+		content: '';
+		position: absolute;
+		width: 220px;
+		height: 220px;
+		right: -70px;
+		top: -80px;
+		border-radius: 999px;
+		background: transparent;
+		pointer-events: none;
+	}
+
+	.mini-stat-card {
+		border-radius: 18px;
+		border: 1px solid rgba(16, 185, 129, 0.2);
+		padding: 1.6rem;
+		background: rgba(216, 250, 239, 0.8);
+		box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+		transition: all 0.2s ease;
+	}
+
+	.mini-stat-card:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+		border-color: rgba(16, 185, 129, 0.3);
+	}
+
+	.mini-stat-icon {
+		width: 42px;
+		height: 42px;
+		border-radius: 12px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.2rem;
+		flex-shrink: 0;
+	}
+
+	.mini-stat-card .mini-stat-icon {
+		background: rgba(16, 185, 129, 0.25);
+		color: #059669;
+	}
+
+	.mini-stat-warn .mini-stat-icon {
+		background: rgba(245, 158, 11, 0.25);
+		color: #d97706;
+	}
+
+	.mini-stat-danger .mini-stat-icon {
+		background: rgba(244, 63, 94, 0.25);
+		color: #e11d48;
+	}
+
+	.mini-stat-label {
+		font-size: 0.76rem;
+		text-transform: uppercase;
+		letter-spacing: 0.09em;
+		font-weight: 700;
+		color: #64748b;
+		margin-bottom: 0.3rem;
+	}
+
+	.mini-stat-value {
+		font-family: 'Space Grotesk', 'Manrope', sans-serif;
+		font-size: 1.6rem;
+		font-weight: 700;
+		color: #0f172a;
+		line-height: 1.1;
+	}
+
+	.mini-stat-warn {
+		border-color: rgba(245, 158, 11, 0.2);
+		background: rgba(254, 243, 199, 0.8);
+	}
+
+	.mini-stat-warn:hover {
+		border-color: rgba(245, 158, 11, 0.3);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+	}
+
+	.mini-stat-danger {
+		border-color: rgba(244, 63, 94, 0.2);
+		background: rgba(255, 228, 230, 0.8);
+	}
+
+	.mini-stat-danger:hover {
+		border-color: rgba(244, 63, 94, 0.3);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+	}
+
+	.employee-note {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.65rem;
+		padding: 0.75rem 0.9rem;
+		border-radius: 12px;
+		background: rgba(14, 165, 233, 0.08);
+		color: #0f172a;
+		font-size: 0.88rem;
+	}
+
+	.employee-note i {
+		color: #0284c7;
+		font-size: 1rem;
+		line-height: 1.1;
+	}
+
+	.sales-card {
+		border-radius: 18px;
+		border: 1px solid rgba(148, 163, 184, 0.15);
+		padding: 1.6rem;
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 249, 255, 0.5) 100%);
+		box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+		animation: rise 0.7s ease both;
+	}
+
+	.sales-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 12px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(16, 185, 129, 0.15);
+		color: #059669;
+		font-size: 1.25rem;
+	}
+
+	.sales-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.4rem 0.8rem;
+		border-radius: 999px;
+		background: rgba(16, 185, 129, 0.12);
+		color: #059669;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.sales-label {
+		font-size: 0.82rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-weight: 700;
+		color: #64748b;
+		margin-bottom: 0.5rem;
+		margin-top: 0.8rem;
+	}
+
+	.sales-value {
+		font-family: 'Space Grotesk', 'Manrope', sans-serif;
+		font-size: 2rem;
+		font-weight: 700;
+		color: #0f172a;
+		line-height: 1.1;
+		margin-bottom: 0.3rem;
+	}
+
+	.sales-subtext {
+		font-size: 0.85rem;
+		color: #64748b;
 	}
 
 	.role-pill {
@@ -564,32 +805,34 @@ $visibleActions = array_values(array_filter(
 		display: flex;
 		align-items: center;
 		gap: 1rem;
-		padding: 1.25rem;
+		padding: 1.4rem;
 		border-radius: 18px;
-		border: 1px solid rgba(148, 163, 184, 0.2);
+		border: 1px solid rgba(148, 163, 184, 0.15);
 		background: #ffffff;
-		box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 		text-decoration: none;
 		color: inherit;
-		transition: transform 0.2s ease, box-shadow 0.2s ease;
+		transition: all 0.2s ease;
 		animation: rise 0.7s ease both;
 	}
 
 	.action-card:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+		transform: translateY(-3px);
+		box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+		border-color: rgba(14, 165, 233, 0.3);
 	}
 
 	.action-icon {
-		width: 48px;
-		height: 48px;
-		border-radius: 16px;
+		width: 50px;
+		height: 50px;
+		border-radius: 14px;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		background: rgba(14, 165, 233, 0.12);
 		color: #0284c7;
-		font-size: 1.2rem;
+		font-size: 1.35rem;
+		flex-shrink: 0;
 	}
 
 	.action-title {
@@ -623,6 +866,10 @@ $visibleActions = array_values(array_filter(
 	@media (max-width: 991px) {
 		.chart-shell {
 			height: 200px;
+		}
+
+		.employee-hero .dashboard-hero {
+			padding: 1.4rem;
 		}
 	}
 </style>

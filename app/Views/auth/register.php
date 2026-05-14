@@ -1,30 +1,27 @@
 	<div class="dashboard-shell">
 		<div class="dashboard-main">
-			<main class="content-area px-2 px-lg-3 py-3 py-lg-4" style="max-width: none;">
-				<div class="row gx-4">
+			<main class="content-area p-0" style="max-width: none;">
+				<div class="pos-shell">
+					<div class="container-fluid px-4 px-lg-5 py-4 py-lg-5">
+						<div class="row gx-4">
 					<div class="col-lg-8 col-xl-9 mb-4">
 						<!-- Form Section -->
-						<div class="card shadow-lg border-0 h-100">
-							<div class="card-body p-0">
+							<div class="pos-card h-100">
+								<div class="pos-card-body p-0">
 								<div class="row g-0 h-100">
 									<!-- Left Side - Info Panel -->
-									<div class="col-md-4 bg-primary text-white d-flex align-items-center">
-										<div class="p-4 w-70">
-											<div class="d-flex align-items-center mb-4">					
-												<div>
-													<h3 class="mb-1 fw-bold">User Management</h3>
-													<p class="mb-0 opacity-75">Add New Employee</p>
-												</div>
+										<div class="col-md-4 pos-side d-flex align-items-center">
+											<div class="p-4">
+												<div class="mb-3 text-uppercase pos-side-eyebrow">User Management</div>
+												<h3 class="mb-2 fw-semibold">Add New Employee</h3>
+												<p class="mb-0 pos-side-muted">Create access for new staff members.</p>
 											</div>
 										</div>
-									</div>
 
 									<!-- Right Side - Form -->
-									<div class="col-md-8">
-										<div class="p-4 p-lg-5">
-											<div class="text-center mb-4">
-												<h3 class="fw-bold mb-2">Add Employee</h3>
-											</div>
+										<div class="col-md-8">
+											<div class="p-4 p-lg-5">
+												<div class="pos-card-header mb-4">Add Employee</div>
 
 											<?php if (session()->getFlashdata('errors')): ?>
 												<div class="alert alert-danger border-0 shadow-sm">
@@ -62,14 +59,14 @@
 												<div class="row">
 													<div class="col-sm-6 mb-3">
 														<div class="form-floating">
-															<input type="text" class="form-control" id="first_name" name="first_name" 
+															<input type="text" class="form-control pos-input" id="first_name" name="first_name" 
 																   placeholder="First Name" value="<?= old('first_name') ?>" required>
 															<label for="first_name"><i class="bi bi-person me-1"></i>First Name</label>
 														</div>
 													</div>
 													<div class="col-sm-6 mb-3">
 														<div class="form-floating">
-															<input type="text" class="form-control" id="last_name" name="last_name" 
+															<input type="text" class="form-control pos-input" id="last_name" name="last_name" 
 																   placeholder="Last Name" value="<?= old('last_name') ?>" required>
 															<label for="last_name"><i class="bi bi-person me-1"></i>Last Name</label>
 														</div>
@@ -78,7 +75,7 @@
 
 												<div class="mb-3">
 													<div class="form-floating">
-														<input type="email" class="form-control" id="email" name="email" 
+														<input type="email" class="form-control pos-input" id="email" name="email" 
 															   placeholder="Email Address" value="<?= old('email') ?>" required>
 														<label for="email"><i class="bi bi-envelope me-1"></i>Email Address</label>
 													</div>
@@ -87,7 +84,7 @@
 												<div class="row">
 													<div class="col-sm-6 mb-3">
 														<div class="form-floating">
-															<input type="password" class="form-control" id="password" name="password" 
+															<input type="password" class="form-control pos-input" id="password" name="password" 
 																   placeholder="Password" required>
 															<label for="password"><i class="bi bi-lock me-1"></i>Password</label>
 														</div>
@@ -95,7 +92,7 @@
 													</div>
 													<div class="col-sm-6 mb-3">
 														<div class="form-floating">
-															<select class="form-select" id="role_id" name="role_id" required>
+															<select class="form-select pos-input" id="role_id" name="role_id" required>
 																<option value="">Choose Role</option>
 																<?php if (isset($roles)): ?>
 																	<?php foreach ($roles as $role): ?>
@@ -112,12 +109,12 @@
 
 												<div class="row">
 													<div class="col-sm-6 mb-3">
-														<button type="submit" class="btn btn-primary btn-lg fw-semibold w-100">
+														<button type="submit" class="btn btn-primary pos-btn-primary btn-lg w-100">
 															<i class="bi bi-person-plus me-2"></i>Create Account
 														</button>
 													</div>
 													<div class="col-sm-6 mb-3">
-														<a href="<?= base_url('dashboard') ?>" class="btn btn-outline-secondary btn-lg w-100">
+														<a href="<?= base_url('dashboard') ?>" class="btn btn-outline-secondary pos-btn-secondary btn-lg w-100">
 															<i class="bi bi-arrow-left me-1"></i>Back to Dashboard
 														</a>
 													</div>
@@ -130,23 +127,25 @@
 						</div>
 					</div>
 
-					<div class="col-lg-4 col-xl-3">
+						<div class="col-lg-4 col-xl-3">
 						<!-- Existing Users Section -->
 						<?php if (isset($users) && !empty($users)): ?>
-							<div class="card shadow-sm border-0 h-100">
-								<div class="card-header bg-light border-0 py-3">
-									<div class="d-flex align-items-center justify-content-between">
+								<div class="pos-card h-100">
+									<div class="pos-card-header d-flex align-items-center justify-content-between">
+										<div class="d-flex align-items-center justify-content-between w-100">
 										<h5 class="mb-0 d-flex align-items-center">
-											<i class="bi bi-people me-2 text-primary"></i>
+												<i class="bi bi-people me-2 pos-accent"></i>
 											<span>Existing Users</span>
 										</h5>
-										<span class="badge bg-primary"><?= count($users) ?> users</span>
+											<span class="badge pos-badge">
+												<?= count($users) ?> users
+											</span>
 									</div>
 								</div>
-								<div class="card-body p-0" style="max-height: 700px; overflow-y: auto;">
+								<div class="pos-card-body p-0" style="max-height: 700px; overflow-y: auto;">
 									<?php foreach ($users as $index => $user): ?>
 										<div class="d-flex align-items-center p-3 <?= $index !== array_key_last($users) ? 'border-bottom' : '' ?>">
-											<div class="bg-primary bg-opacity-10 text-primary fw-semibold rounded-circle d-inline-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.1rem;">
+												<div class="pos-avatar me-3">
 												<?= esc(strtoupper(substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1))) ?>
 											</div>
 											<div class="flex-grow-1">
@@ -161,16 +160,71 @@
 								</div>
 							</div>
 						<?php else: ?>
-							<div class="card shadow-sm border-0 h-100">
-								<div class="card-body d-flex align-items-center justify-content-center text-center">
+							<div class="pos-card h-100">
+								<div class="pos-card-body d-flex align-items-center justify-content-center text-center">
 									<div>
 										<i class="bi bi-people fs-1 text-muted mb-3"></i>
+
+									<section class="row g-4 mt-2">
+										<div class="col-lg-8 col-xl-9">
+											<div class="pos-card">
+												<div class="pos-card-header">Onboarding Checklist</div>
+												<div class="pos-card-body">
+													<div class="row g-3">
+														<div class="col-md-4">
+															<div class="pos-check">
+																<i class="bi bi-check2-circle"></i>
+																<div>
+																	<div class="fw-semibold">Profile basics</div>
+																	<div class="small text-muted">Name + role assigned</div>
+																</div>
+															</div>
+														</div>
+														<div class="col-md-4">
+															<div class="pos-check">
+																<i class="bi bi-shield-check"></i>
+																<div>
+																	<div class="fw-semibold">Access ready</div>
+																	<div class="small text-muted">Permissions applied</div>
+																</div>
+															</div>
+														</div>
+														<div class="col-md-4">
+															<div class="pos-check">
+																<i class="bi bi-envelope-check"></i>
+																<div>
+																	<div class="fw-semibold">Send invite</div>
+																	<div class="small text-muted">Share login details</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-4 col-xl-3">
+											<div class="pos-card">
+												<div class="pos-card-header">Role Summary</div>
+												<div class="pos-card-body">
+													<div class="pos-role">
+														<div class="fw-semibold">Owner</div>
+														<div class="small text-muted">Full access, reporting, users.</div>
+													</div>
+													<div class="pos-role">
+														<div class="fw-semibold">Employee</div>
+														<div class="small text-muted">Sales and stock operations.</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</section>
 										<h5 class="text-muted">No Users Yet</h5>
 										<p class="text-muted">Create your first user account to get started.</p>
 									</div>
 								</div>
 							</div>
 						<?php endif; ?>
+						</div>
 					</div>
 				</div>
 			</main>
@@ -178,6 +232,157 @@
 	</div>
 
 	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Spline+Sans+Mono:wght@500;600&display=swap');
+
+		:root {
+			--pos-ink: #1a1a1a;
+			--pos-muted: #636363;
+			--pos-surface: #ffffff;
+			--pos-ice: #f7f7f7;
+			--pos-accent: #024ad8;
+			--pos-accent-2: #0e3191;
+			--pos-border: #e8e8e8;
+			--pos-highlight: rgba(2, 74, 216, 0.12);
+			--pos-shadow: 0 8px 24px rgba(26, 26, 26, 0.12);
+		}
+
+		.pos-shell {
+			position: relative;
+			font-family: 'Manrope', 'Segoe UI', sans-serif;
+			color: var(--pos-ink);
+			background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 55%, #e8e8e8 100%);
+			min-height: 100vh;
+		}
+
+		.pos-shell::before {
+			content: '';
+			position: absolute;
+			inset: 0;
+			background: linear-gradient(120deg, rgba(2, 74, 216, 0.06), transparent 50%);
+			pointer-events: none;
+		}
+
+		.pos-shell > .container-fluid {
+			position: relative;
+			z-index: 1;
+		}
+
+		.pos-card {
+			background: var(--pos-surface);
+			border-radius: 22px;
+			border: 1px solid var(--pos-border);
+			box-shadow: var(--pos-shadow);
+			display: flex;
+			flex-direction: column;
+			min-height: 0;
+		}
+
+		.pos-card-header {
+			padding: 20px 24px 0;
+			font-weight: 600;
+			font-size: 1.1rem;
+		}
+
+		.pos-card-body {
+			padding: 20px 24px 24px;
+			min-height: 0;
+		}
+
+		.pos-input {
+			border-radius: 14px;
+			border: 1px solid var(--pos-border);
+			padding: 12px 14px;
+			font-weight: 500;
+		}
+
+		.pos-input:focus {
+			border-color: var(--pos-accent);
+			box-shadow: 0 0 0 0.2rem rgba(2, 74, 216, 0.12);
+		}
+
+		.pos-btn-primary {
+			background: var(--pos-accent);
+			border-color: var(--pos-accent);
+			border-radius: 14px;
+			font-weight: 600;
+			padding: 12px 16px;
+		}
+
+		.pos-btn-secondary {
+			border-radius: 14px;
+			font-weight: 600;
+			padding: 12px 16px;
+			border: 1px solid var(--pos-border);
+		}
+
+		.pos-side {
+			background: var(--pos-ink);
+			color: #ffffff;
+			border-radius: 22px 0 0 22px;
+		}
+
+		.pos-side-eyebrow {
+			letter-spacing: 0.12em;
+			font-size: 0.7rem;
+		}
+
+		.pos-side-muted {
+			color: rgba(255, 255, 255, 0.7);
+		}
+
+		@media (max-width: 767px) {
+			.pos-side {
+				border-radius: 22px 22px 0 0;
+			}
+		}
+
+		.pos-avatar {
+			width: 50px;
+			height: 50px;
+			border-radius: 16px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 1.1rem;
+			font-weight: 600;
+			background: rgba(2, 74, 216, 0.12);
+			color: var(--pos-accent);
+		}
+
+		.pos-accent {
+			color: var(--pos-accent);
+		}
+
+		.pos-badge {
+			background: var(--pos-highlight);
+			color: var(--pos-accent);
+			border-radius: 999px;
+			font-weight: 600;
+			padding: 0.35rem 0.75rem;
+		}
+
+		.pos-check {
+			display: flex;
+			gap: 0.75rem;
+			align-items: flex-start;
+			padding: 0.75rem 0.9rem;
+			border-radius: 14px;
+			border: 1px solid var(--pos-border);
+			background: var(--pos-ice);
+		}
+
+		.pos-check i {
+			color: var(--pos-accent);
+			font-size: 1.1rem;
+			margin-top: 0.1rem;
+		}
+
+		.pos-role + .pos-role {
+			margin-top: 1rem;
+			padding-top: 1rem;
+			border-top: 1px dashed var(--pos-border);
+		}
+
 		.form-floating > .form-control:focus,
 		.form-floating > .form-control:not(:placeholder-shown),
 		.form-floating > .form-select:focus,
@@ -196,16 +401,8 @@
 
 		.form-control:focus,
 		.form-select:focus {
-			border-color: #0d6efd;
-			box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-		}
-
-		.btn {
-			border-radius: 0.5rem;
-		}
-
-		.card {
-			border-radius: 1rem;
+			border-color: var(--pos-accent);
+			box-shadow: 0 0 0 0.2rem rgba(2, 74, 216, 0.12);
 		}
 
 		.password-strength {

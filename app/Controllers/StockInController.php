@@ -9,6 +9,8 @@ use App\Models\Products;
 use App\Models\UnitTypes;
 use App\Models\ProductBatch;
 use App\Models\SalesPrice;
+use App\Models\ProductExpense;
+use App\Services\AuditTrailService;
 use App\Services\BarcodeService;
 
 class StockInController extends BaseController
@@ -174,6 +176,21 @@ class StockInController extends BaseController
                 }
             }
 
+            $productExpenseModel = new ProductExpense();
+            $productExpenseInserted = $productExpenseModel->insert([
+                'stock_in_id' => $stockInID,
+                'amount' => $incomingCapital,
+                'expense_date' => $stockInDate,
+                'source_label' => 'stock-in-capital',
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            if ($productExpenseInserted === false) {
+                $db->transRollback();
+                $expenseErrors = implode(' ', $productExpenseModel->errors());
+                return redirect()->back()->withInput()->with('error', 'Could not save product expense row. ' . ($expenseErrors ?: 'Please check database schema.'));
+            }
+
             $productRow = $productsModel->where('stock_in_id', $stockInID)->first();
             if (!$productRow) {
                 $productInserted = $productsModel->insert([
@@ -211,6 +228,36 @@ class StockInController extends BaseController
             }
 
             $db->transCommit();
+
+            $auditAction = $mergedToExisting ? 'update' : 'create';
+            $beforeData = $mergedToExisting
+                ? ['quantity_before' => (int) ($existingStockRow['quantity'] ?? 0)]
+                : null;
+            $afterData = $db->table('stock_in')
+                ->where('id', $stockInID)
+                ->get()
+                ->getRowArray();
+
+            try {
+                (new AuditTrailService())->log([
+                    'actor_user_id' => (int) (session()->get('user_id') ?? 0) ?: null,
+                    'actor_role' => (string) (session()->get('role') ?? ''),
+                    'module' => 'stock_in',
+                    'action' => $auditAction,
+                    'entity_type' => 'stock_in',
+                    'entity_id' => (string) $stockInID,
+                    'summary' => $mergedToExisting
+                        ? 'Merged stock-in quantity for ' . $productName
+                        : 'Created stock-in entry for ' . $productName,
+                    'before_data' => $beforeData,
+                    'after_data' => $afterData,
+                    'request_method' => $this->request->getMethod(),
+                    'request_path' => $this->request->getPath(),
+                    'ip_address' => $this->request->getIPAddress(),
+                ]);
+            } catch (\RuntimeException $exception) {
+                return redirect()->back()->withInput()->with('error', $exception->getMessage());
+            }
 
             if ($mergedToExisting) {
                 return redirect()->to('/stockin')->with('success', 'Matching stock entry found. Quantity was added to the existing batch.');

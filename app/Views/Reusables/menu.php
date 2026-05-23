@@ -6,6 +6,7 @@
 	<title>Dashboard - Inventory &amp; Financial Tracking System</title>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 	<style>
 		:root {
 			--sidebar-width: 280px;
@@ -154,6 +155,10 @@
 			z-index: 1;
 		}
 
+		.navbar.sticky-top {
+			z-index: 1085;
+		}
+
 		@media (max-width: 991px) {
 			.dashboard-shell {
 				flex-direction: column;
@@ -205,27 +210,66 @@ $initials = strtoupper($firstInitial . $lastInitial);
 if ($initials === '') {
     $initials = 'IS';
 }
-$navItems = [
-    ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'url' => base_url('dashboard'), 'roles' => ['Owner', 'Employee']],
-    ['label' => 'Products', 'icon' => 'bi-boxes', 'url' => base_url('products'), 'roles' => ['Owner', 'Employee']],
-	['label' => 'Stock Levels', 'icon' => 'bi-graph-up-arrow', 'url' => base_url('stock-levels'), 'roles' => ['Owner', 'Employee']],
-    ['label' => 'Stock-Out', 'icon' => 'bi-cart-check', 'url' => base_url('stock-out'), 'roles' => ['Owner', 'Employee']],
-	['label' => 'Cashier', 'icon' => 'bi-cash-stack', 'url' => base_url('stock-out/cashier'), 'roles' => ['Owner', 'Employee']],
-	['label' => 'Stock-In', 'icon' => 'bi-receipt', 'url' => base_url('stockin'), 'roles' => ['Owner', 'Employee']],
-    ['label' => 'Users Management', 'icon' => 'bi-people', 'url' => base_url('/register'), 'roles' => ['Owner']],
-    ['label' => 'Reports', 'icon' => 'bi-bar-chart-line', 'url' => base_url('reports'), 'roles' => ['Owner']],
+$navGroups = [
+    [
+        'label' => 'Overview',
+        'icon' => 'bi-speedometer2',
+        'roles' => ['Owner', 'Employee'],
+        'items' => [
+            ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'path' => 'dashboard', 'roles' => ['Owner', 'Employee']],
+        ],
+    ],
+    [
+        'label' => 'Inventory',
+        'icon' => 'bi-boxes',
+        'roles' => ['Owner', 'Employee'],
+        'items' => [
+            ['label' => 'Products', 'icon' => 'bi-boxes', 'path' => 'products', 'roles' => ['Owner', 'Employee']],
+            ['label' => 'Stock Levels', 'icon' => 'bi-graph-up-arrow', 'path' => 'stock-levels', 'roles' => ['Owner', 'Employee']],
+            ['label' => 'Stock-In', 'icon' => 'bi-receipt', 'path' => 'stockin', 'roles' => ['Owner', 'Employee']],
+        ],
+    ],
+    [
+        'label' => 'Sales',
+        'icon' => 'bi-cart-check',
+        'roles' => ['Owner', 'Employee'],
+        'items' => [
+            ['label' => 'Stock-Out', 'icon' => 'bi-cart-check', 'path' => 'stock-out', 'roles' => ['Owner', 'Employee']],
+            ['label' => 'Cashier', 'icon' => 'bi-cash-stack', 'path' => 'stock-out/cashier', 'roles' => ['Owner', 'Employee']],
+        ],
+    ],
+    [
+        'label' => 'Reports & Analytics',
+        'icon' => 'bi-graph-up',
+        'roles' => ['Owner'],
+        'items' => [
+            ['label' => 'Financial Dashboard', 'icon' => 'bi-graph-up', 'path' => 'financial', 'active_path' => 'financial', 'roles' => ['Owner']],
+            ['label' => 'Expense Tracking', 'icon' => 'bi-wallet2', 'path' => 'financial/expenses', 'active_path' => 'financial/expenses', 'roles' => ['Owner']],
+            ['label' => 'Monthly CSV Export', 'icon' => 'bi-file-earmark-spreadsheet', 'path' => 'financial/export-csv?year=' . date('Y') . '&month=' . date('n'), 'active_path' => 'financial/export-csv', 'roles' => ['Owner']],
+        ],
+    ],
+    [
+        'label' => 'Management',
+        'icon' => 'bi-sliders',
+        'roles' => ['Owner'],
+        'items' => [
+            ['label' => 'Users Management', 'icon' => 'bi-people', 'path' => 'register', 'roles' => ['Owner']],
+            ['label' => 'Audit Trail', 'icon' => 'bi-clipboard-data', 'path' => 'management/audit-trail', 'roles' => ['Owner']],
+        ],
+    ],
 ];
 
 $uri = service('uri');
-$currentPath = '/' . trim($uri->getPath(), '/');
-if ($currentPath === '//') {
-    $currentPath = '/';
-}
+$currentPath = trim($uri->getPath(), '/');
+$isItemActive = static function (string $current, string $itemPath): bool {
+    $normalizedItem = trim($itemPath, '/');
+    return $current === $normalizedItem || str_starts_with($current, $normalizedItem . '/');
+};
 ?>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top">
     <div class="container-fluid px-4">
-        <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="<?= base_url() ?>">
+		<a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="<?= session()->get('logged_in') ? base_url('dashboard') : base_url() ?>">
             <span class="bg-primary text-white rounded-3 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
                 <i class="bi bi-box-seam"></i>
             </span>
@@ -238,16 +282,56 @@ if ($currentPath === '//') {
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <?php foreach ($navItems as $item): ?>
-                    <?php if (in_array($role, $item['roles'], true)): ?>
-                        <?php $isActive = $currentPath === $item['url']; ?>
+                <?php foreach ($navGroups as $group): ?>
+                    <?php if (!in_array($role, $group['roles'], true)): ?>
+                        <?php continue; ?>
+                    <?php endif; ?>
+                    <?php
+                    $visibleItems = array_values(array_filter(
+                        $group['items'],
+                        static fn(array $item): bool => in_array($role, $item['roles'], true)
+                    ));
+                    if ($visibleItems === []) {
+                        continue;
+                    }
+                    $groupActive = false;
+                    foreach ($visibleItems as $item) {
+                        $itemActivePath = (string) ($item['active_path'] ?? $item['path']);
+                        if ($isItemActive($currentPath, $itemActivePath)) {
+                            $groupActive = true;
+                            break;
+                        }
+                    }
+                    if (count($visibleItems) === 1) {
+                        $singleItem = $visibleItems[0];
+                        ?>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isActive ? 'active bg-primary text-white' : 'text-dark' ?>" href="<?= esc($item['url']) ?>">
-                                <i class="bi <?= esc($item['icon']) ?> small"></i>
-                                <span><?= esc($item['label']) ?></span>
+                            <a class="nav-link d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $groupActive ? 'active bg-primary text-white' : 'text-dark' ?>" href="<?= esc(base_url((string) $singleItem['path'])) ?>">
+                                <i class="bi <?= esc($group['icon']) ?> small"></i>
+                                <span><?= esc($group['label']) ?></span>
                             </a>
                         </li>
-                    <?php endif; ?>
+                        <?php
+                        continue;
+                    }
+                    ?>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $groupActive ? 'active bg-primary text-white' : 'text-dark' ?>" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi <?= esc($group['icon']) ?> small"></i>
+                            <span><?= esc($group['label']) ?></span>
+                        </a>
+                        <ul class="dropdown-menu shadow-sm border-0 rounded-3 py-2">
+                            <?php foreach ($visibleItems as $item): ?>
+                                <?php $itemActive = $isItemActive($currentPath, (string) ($item['active_path'] ?? $item['path'])); ?>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 <?= $itemActive ? 'active' : '' ?>" href="<?= esc(base_url((string) $item['path'])) ?>">
+                                        <i class="bi <?= esc($item['icon']) ?> small"></i>
+                                        <span><?= esc($item['label']) ?></span>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </li>
                 <?php endforeach; ?>
             </ul>
 
@@ -266,5 +350,3 @@ if ($currentPath === '//') {
         </div>
     </div>
 </nav>
-</body>
-</html>

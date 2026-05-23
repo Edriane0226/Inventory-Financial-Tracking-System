@@ -6,22 +6,6 @@
                 <i class="bi bi-list"></i> Menu
             </button>
 
-            <!-- Hero Section -->
-            <section class="dashboard-hero mb-4 position-relative overflow-hidden">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <div class="z-1">
-                        <p class="text-uppercase small text-muted mb-1">Product Management</p>
-                        <h1 class="display-6 fw-semibold mb-2 text-dark">Inventory Dashboard</h1>
-                        <p class="text-muted mb-0">Track and manage your products separated by batch number.</p>
-                    </div>
-                    <div class="z-1">
-                        <div class="bg-white rounded-circle p-3 shadow-sm d-none d-sm-block">
-                            <i class="bi bi-box-seam text-primary fs-2"></i>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <!-- Summary Cards -->
             <section class="mb-4">
                 <div class="row g-3">
@@ -72,7 +56,7 @@
                                             }
                                             sort($uniqueCategories);
                                             foreach ($uniqueCategories as $c) {
-                                                echo '<option value="' . esc($c) . '">' . esc($c) . '</option>';
+                                                echo '<option value="' . esc((string) $c) . '">' . esc((string) $c) . '</option>';
                                             }
                                         }
                                     ?>
@@ -92,7 +76,7 @@
                                             }
                                             sort($uniqueBatches);
                                             foreach ($uniqueBatches as $b) {
-                                                echo '<option value="' . esc($b) . '">' . esc($b) . '</option>';
+                                                echo '<option value="' . esc((string) $b) . '">' . esc((string) $b) . '</option>';
                                             }
                                         }
                                     ?>
@@ -182,21 +166,20 @@
         </main>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // Sidebar Toggle
         const body = document.body;
         const toggleBtn = document.getElementById('sidebarToggle');
         const overlay = document.querySelector('.sidebar-overlay');
+        const hasSidebar = document.querySelector('.sidebar') !== null;
         const closeSidebar = () => body.classList.remove('sidebar-open');
 
-        if (toggleBtn) {
+        if (toggleBtn && hasSidebar) {
             toggleBtn.addEventListener('click', () => body.classList.toggle('sidebar-open'));
         }
 
-        if (overlay) {
+        if (overlay && hasSidebar) {
             overlay.addEventListener('click', closeSidebar);
         }
 

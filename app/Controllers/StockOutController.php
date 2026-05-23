@@ -13,6 +13,7 @@ use App\Models\Receipt;
 use App\Models\SalesPrice;
 use App\Models\StockOut;
 use App\Models\UserModel;
+use App\Services\AuditTrailService;
 
 class StockOutController extends BaseController
 {
@@ -154,6 +155,7 @@ class StockOutController extends BaseController
                 $receiptInserted = $receiptModel->insert([
                     'receipt_number' => $receiptNumber,
                     'total_amount' => 0,
+                    'created_at' => date('Y-m-d H:i:s'),
                 ]);
 
                 if ($receiptInserted === false) {
@@ -528,6 +530,7 @@ class StockOutController extends BaseController
             $prefix = $isCashier ? 'CASH' : 'INV';
             $receiptInserted = $receiptModel->insert([
                 'receipt_number' => $prefix . '-' . date('YmdHis') . '-' . random_int(1000, 9999),
+                'created_at' => date('Y-m-d H:i:s'),
             ]);
 
             if ($receiptInserted === false) {
@@ -625,6 +628,41 @@ class StockOutController extends BaseController
                 return [
                     'ok' => false,
                     'message' => 'Could not save stock out entry. ' . ($errors ?: ''),
+                ];
+            }
+
+            $auditPayload = [
+                'product_id' => (int) $product['id'],
+                'batch_id' => (int) $row['batch_id'],
+                'quantity' => $take,
+                'reason_id' => (int) $reason['id'],
+                'receipt_id' => (int) $receiptId,
+                'stock_out_date' => $stockOutDateTime,
+            ];
+
+            try {
+                (new AuditTrailService())->log([
+                    'actor_user_id' => $recordedBy,
+                    'actor_role' => (string) (session()->get('role') ?? ''),
+                    'module' => 'stock_out',
+                    'action' => 'create',
+                    'entity_type' => 'stock_out',
+                    'entity_id' => (string) $stockOutInserted,
+                    'summary' => 'Recorded stock-out for ' . (string) ($scannedBatch['product_name'] ?? '') . ' qty ' . $take,
+                    'before_data' => null,
+                    'after_data' => $auditPayload,
+                    'request_method' => $this->request->getMethod(),
+                    'request_path' => $this->request->getPath(),
+                    'ip_address' => $this->request->getIPAddress(),
+                ]);
+            } catch (\RuntimeException $exception) {
+                if ($manageTransaction) {
+                    $db->transRollback();
+                }
+
+                return [
+                    'ok' => false,
+                    'message' => $exception->getMessage(),
                 ];
             }
 

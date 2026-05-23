@@ -22,7 +22,7 @@ class InventoryController extends BaseController
             ->join('product_batch pb', 'pb.stock_in_id = si.id', 'left')
             ->join('categories c', 'c.id = si.category_id', 'left')
             ->join('unit_types ut', 'ut.id = si.unit_type_id', 'left')
-            ->groupBy(['si.product_name', 'pb.batch_number'])
+            ->groupBy(['si.product_name', 'pb.batch_number', 'pb.expiration_date'])
             ->orderBy('si.product_name', 'ASC')
             ->orderBy('pb.batch_number', 'ASC')
             ->get()

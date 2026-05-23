@@ -1,456 +1,875 @@
 <?php
 $firstName = session()->get('first_name') ?? 'there';
+$lastName = session()->get('last_name') ?? '';
 $role = session()->get('role') ?? 'Employee';
 $lowStockCount = (int) ($lowStockCount ?? 0);
+$displayName = trim($firstName . ' ' . $lastName);
+if ($displayName === '') {
+    $displayName = 'there';
+}
+
+$summary = $summary ?? [
+    'total_products' => 0,
+    'in_stock' => 0,
+    'low_stock' => 0,
+    'out_of_stock' => 0,
+];
+$inventoryValue = (float) ($inventoryValue ?? 0);
+$salesSummary = $salesSummary ?? [
+    'today' => 0,
+    'week' => 0,
+    'month' => 0,
+    'receipts_today' => 0,
+    'receipts_week' => 0,
+    'receipts_month' => 0,
+];
+$salesTrend = $salesTrend ?? [
+    'labels' => [],
+    'values' => [],
+];
+$recentReceipts = $recentReceipts ?? [];
+$lowStockItems = $lowStockItems ?? [];
+
+$quickActions = [
+    ['label' => 'Manage Products', 'icon' => 'bi-boxes', 'path' => 'products', 'roles' => ['Owner']],
+    ['label' => 'Stock Levels', 'icon' => 'bi-graph-up-arrow', 'path' => 'stock-levels', 'roles' => ['Owner', 'Employee']],
+    ['label' => 'Stock In', 'icon' => 'bi-receipt', 'path' => 'stockin', 'roles' => ['Owner', 'Employee']],
+    ['label' => 'Cashier', 'icon' => 'bi-cash-stack', 'path' => 'stock-out/cashier', 'roles' => ['Owner', 'Employee']],
+    ['label' => 'Financial Dashboard', 'icon' => 'bi-graph-up', 'path' => 'financial', 'roles' => ['Owner']],
+    ['label' => 'Expense Tracking', 'icon' => 'bi-wallet2', 'path' => 'financial/expenses', 'roles' => ['Owner']],
+    ['label' => 'Users Management', 'icon' => 'bi-people', 'path' => 'register', 'roles' => ['Owner']],
+];
+
+$visibleActions = array_values(array_filter(
+    $quickActions,
+    static fn(array $action): bool => in_array($role, $action['roles'], true)
+));
+
+$quickActionsTitle = $role === 'Owner' ? 'Quick Actions' : 'Employee Tools';
+$quickActionsHint = $role === 'Owner'
+	? 'Only tools that are ready to use'
+	: 'Daily operations shortcuts';
 ?>
-<?php if(session()->get('role') == 'Owner'): ?>
-	<div class="dashboard-shell">
-		<div class="sidebar-overlay d-lg-none"></div>
-		<div class="dashboard-main">
-			<main class="content-area px-3 px-lg-4 py-4 py-lg-5">
-				<button class="btn btn-outline-primary mb-3 d-lg-none sidebar-toggle" id="sidebarToggle">
-					<i class="bi bi-list"></i> Menu
-				</button>
-		<section class="dashboard-hero mb-5">
-			<div class="row align-items-center">
-				<div class="col-lg-8">
-					<p class="text-uppercase small text-muted mb-1">Today • <?= esc(date('l, F j')) ?></p>
-					<h1 class="display-6 fw-semibold mb-3">Welcome back, <?= esc($firstName) ?></h1>
-			</div>
-		</section>
 
-		<!-- Product Management Section -->
-		<section class="mb-5">
-			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-box-seam text-primary me-2"></i>Product Management</h2>
-			<div class="row g-3">
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-tags fs-3 text-primary mb-3"></i>
-							<h6 class="card-title">Product Category</h6>
-							<p class="card-text text-muted small">Manage product categories</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-upc-scan fs-3 text-primary mb-3"></i>
-							<h6 class="card-title">Barcode Support</h6>
-							<p class="card-text text-muted small">Barcode scanning & management</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-calendar-x fs-3 text-warning mb-3"></i>
-							<h6 class="card-title">Expiration Tracking</h6>
-							<p class="card-text text-muted small">Track product expiration dates</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-rulers fs-3 text-success mb-3"></i>
-							<h6 class="card-title">Unit Types</h6>
-							<p class="card-text text-muted small">kg, pack, piece, box units</p>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="row g-3 mt-2">
-				<div class="col-md-6">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-currency-dollar fs-3 text-info mb-3"></i>
-							<h6 class="card-title">Capital vs Selling Price</h6>
-							<p class="card-text text-muted small">Profit margin tracking</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-eye fs-3 text-secondary mb-3"></i>
-							<h6 class="card-title">Stock Overview</h6>
-							<p class="card-text text-muted small">Product inventory summary</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
+<div class="dashboard-shell analytics-dashboard">
+	<div class="dashboard-main">
+		<main class="content-area px-3 px-lg-4 py-4 py-lg-5">
+			<?php if (session()->getFlashdata('success')): ?>
+				<div class="alert alert-success"><?= esc((string) session()->getFlashdata('success')) ?></div>
+			<?php endif; ?>
+			<?php if (session()->getFlashdata('error')): ?>
+				<div class="alert alert-danger"><?= esc((string) session()->getFlashdata('error')) ?></div>
+			<?php endif; ?>
 
-		<!-- Inventory Control Section -->
-		<section class="mb-5">
-			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-boxes text-primary me-2"></i>Inventory Control</h2>
-			<div class="row g-3">
-				<div class="col-md-6 col-lg-4">
-					<a href="<?= base_url('stockin') ?>" class="text-decoration-none text-reset d-block h-100">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-arrow-down-circle fs-3 text-success mb-3"></i>
-							<h6 class="card-title">Stock In</h6>
-							<p class="card-text text-muted small">Record incoming inventory</p>
-						</div>
-					</div>
-					</a>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<a href="<?= base_url('stock-out/inventory') ?>" class="text-decoration-none text-reset d-block h-100">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-arrow-up-circle fs-3 text-danger mb-3"></i>
-							<h6 class="card-title">Stock Out</h6>
-							<p class="card-text text-muted small">Automatic deduction per sale</p>
-						</div>
-					</div>
-					</a>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-gear fs-3 text-warning mb-3"></i>
-							<h6 class="card-title">Stock Adjustments</h6>
-							<p class="card-text text-muted small">Lost, damaged, expired items</p>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="row g-3 mt-2">
-				<div class="col-md-6 col-lg-4">
-					<a href="<?= base_url('stock-levels?status=low_stock') ?>" class="text-decoration-none text-reset d-block h-100">
-					<div class="card h-100 border-0 shadow-sm position-relative">
-						<div class="card-body text-center position-relative">
-							<?php if ($lowStockCount > 0): ?>
-								<span class="badge bg-danger low-stock-card-badge"><?= esc((string) $lowStockCount) ?></span>
-							<?php endif; ?>
-							<i class="bi bi-exclamation-triangle fs-3 text-danger mb-3"></i>
-							<h6 class="card-title">Low Stock Alert</h6>
-							<p class="card-text text-muted small">Monitor stock levels</p>
-						</div>
-					</div>
-					</a>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-calculator fs-3 text-info mb-3"></i>
-							<h6 class="card-title">Total Stock Value</h6>
-							<p class="card-text text-muted small">Inventory valuation</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-clock-history fs-3 text-secondary mb-3"></i>
-							<h6 class="card-title">Inventory History</h6>
-							<p class="card-text text-muted small">Track all inventory changes</p>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="row g-3 mt-2">
-				<div class="col-md-12">
-					<div class="card border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-layers fs-3 text-primary mb-3"></i>
-							<h6 class="card-title">Batch Tracking</h6>
-							<p class="card-text text-muted small">Track batches for perishable products</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
+			
 
-		<!-- Sales Management Section -->
-		<section class="mb-5">
-			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-cart-check text-primary me-2"></i>Sales Management</h2>
-			<div class="row g-3">
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-receipt fs-3 text-success mb-3"></i>
-							<h6 class="card-title">Sales Receipt</h6>
-							<p class="card-text text-muted small">Generate sales receipts</p>
+			<?php if ($role !== 'Owner'): ?>
+			<section class="employee-hero mb-5">
+				<div class="row g-3 align-items-stretch">
+					<div class="col-lg-8">
+						<div class="dashboard-hero h-100">
+							<div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+								<div>
+									<p class="text-uppercase small fw-semibold mb-2 text-secondary">Employee Dashboard</p>
+									<h1 class="h3 mb-2">Welcome back, <?= esc($displayName) ?>.</h1>
+								</div>
+								<span class="role-pill"><i class="bi bi-person-badge"></i><?= esc((string) $role) ?></span>
+							</div>
+							<div class="row g-3 mt-1">
+								<div class="col-md-4">
+									<div class="mini-stat-card">
+										<div class="mini-stat-icon"><i class="bi bi-check-circle"></i></div>
+										<div>
+											<div class="mini-stat-label">In Stock</div>
+											<div class="mini-stat-value"><?= esc((string) ($summary['in_stock'] ?? 0)) ?></div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="mini-stat-card mini-stat-warn">
+										<div class="mini-stat-icon"><i class="bi bi-exclamation-circle"></i></div>
+										<div>
+											<div class="mini-stat-label">Low Stock</div>
+											<div class="mini-stat-value"><?= esc((string) ($summary['low_stock'] ?? 0)) ?></div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="mini-stat-card mini-stat-danger">
+										<div class="mini-stat-icon"><i class="bi bi-x-circle"></i></div>
+										<div>
+											<div class="mini-stat-label">Out of Stock</div>
+											<div class="mini-stat-value"><?= esc((string) ($summary['out_of_stock'] ?? 0)) ?></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-4">
+						<div class="sales-card h-100">
+							<div class="d-flex justify-content-between align-items-start mb-3">
+								<div class="sales-icon"><i class="bi bi-cash-coin"></i></div>
+								<span class="sales-badge"><?= date('M d') ?></span>
+							</div>
+							<div class="sales-label">Sales Today</div>
+							<div class="sales-value">₱<?= esc(number_format((float) ($salesSummary['today'] ?? 0), 2)) ?></div>
+							<div class="sales-subtext"><?= esc((string) ($salesSummary['receipts_today'] ?? 0)) ?> receipts</div>
+							<div class="employee-note mt-3">
+								<i class="bi bi-lightning-charge-fill"></i>
+								<span>Tip: Use barcode scan in cashier for faster checkout.</span>
+							</div>
 						</div>
 					</div>
 				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-credit-card fs-3 text-warning mb-3"></i>
-							<h6 class="card-title">Credit Tracking</h6>
-							<p class="card-text text-muted small">Monitor credit sales</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-currency-exchange fs-3 text-info mb-3"></i>
-							<h6 class="card-title">Payment Tracking</h6>
-							<p class="card-text text-muted small">Track payments received</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-arrow-counterclockwise fs-3 text-danger mb-3"></i>
-							<h6 class="card-title">Refund & Returns</h6>
-							<p class="card-text text-muted small">Process refunds and returns</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
+			</section>
+			<?php endif; ?>
 
-		<!-- Financial Tracking Section -->
-		<section class="mb-5">
-			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-graph-up text-primary me-2"></i>Financial Tracking</h2>
-			<div class="row g-3">
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-trending-up fs-3 text-success mb-3"></i>
-							<h6 class="card-title">Revenue Tracking</h6>
-							<p class="card-text text-muted small">Monitor total revenue</p>
+			<?php if ($role === 'Owner'): ?>
+			<section class="mb-5">
+				<div class="row g-3">
+					<div class="col-md-6 col-xl-4">
+						<div class="metric-card" style="animation-delay: 0.05s;">
+							<div class="d-flex justify-content-between align-items-start">
+								<div>
+									<div class="metric-label">Total Products</div>
+									<div class="metric-value"><?= esc((string) $summary['total_products']) ?></div>
+								</div>
+								<div class="metric-icon"><i class="bi bi-box-seam"></i></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6 col-xl-4">
+						<div class="metric-card" style="animation-delay: 0.1s;">
+							<div class="d-flex justify-content-between align-items-start">
+								<div>
+									<div class="metric-label">Low Stock Items</div>
+									<div class="metric-value"><?= esc((string) $summary['low_stock']) ?></div>
+									<div class="metric-subtext">Needs attention</div>
+								</div>
+								<div class="metric-icon metric-icon-warning"><i class="bi bi-exclamation-triangle"></i></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6 col-xl-4">
+						<div class="metric-card" style="animation-delay: 0.15s;">
+							<div class="d-flex justify-content-between align-items-start">
+								<div>
+									<div class="metric-label">Out of Stock</div>
+									<div class="metric-value"><?= esc((string) $summary['out_of_stock']) ?></div>
+									<div class="metric-subtext">Restock needed</div>
+								</div>
+								<div class="metric-icon metric-icon-danger"><i class="bi bi-x-circle"></i></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6 col-xl-4">
+						<div class="metric-card" style="animation-delay: 0.2s;">
+							<div class="d-flex justify-content-between align-items-start">
+								<div>
+									<div class="metric-label">Inventory Value</div>
+									<div class="metric-value">PHP <?= esc(number_format($inventoryValue, 2)) ?></div>
+									<div class="metric-subtext">Estimated stock worth</div>
+								</div>
+								<div class="metric-icon metric-icon-accent"><i class="bi bi-bank"></i></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6 col-xl-4">
+						<div class="metric-card" style="animation-delay: 0.25s;">
+							<div class="d-flex justify-content-between align-items-start">
+								<div>
+									<div class="metric-label">Sales Today</div>
+									<div class="metric-value">PHP <?= esc(number_format((float) $salesSummary['today'], 2)) ?></div>
+									<div class="metric-subtext"><?= esc((string) $salesSummary['receipts_today']) ?> transactions</div>
+								</div>
+								<div class="metric-icon"><i class="bi bi-graph-up"></i></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6 col-xl-4">
+						<div class="metric-card" style="animation-delay: 0.3s;">
+							<div class="d-flex justify-content-between align-items-start">
+								<div>
+									<div class="metric-label">Sales This Week</div>
+									<div class="metric-value">PHP <?= esc(number_format((float) $salesSummary['week'], 2)) ?></div>
+									<div class="metric-subtext"><?= esc((string) $salesSummary['receipts_week']) ?> transactions</div>
+								</div>
+								<div class="metric-icon metric-icon-accent"><i class="bi bi-bar-chart"></i></div>
+							</div>
 						</div>
 					</div>
 				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-trending-down fs-3 text-danger mb-3"></i>
-							<h6 class="card-title">Expenses Tracking</h6>
-							<p class="card-text text-muted small">Track business expenses</p>
+			</section>
+
+			<section class="mb-5">
+				<div class="row g-4">
+					<div class="col-lg-8">
+						<div class="panel-card p-3" style="animation-delay: 0.2s;">
+							<div class="card-body">
+								<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+									<h2 class="h5 mb-0">Sales Trend (Last 7 Days)</h2>
+									<span class="text-muted small">Monthly total: PHP <?= esc(number_format((float) $salesSummary['month'], 2)) ?></span>
+								</div>
+								<div class="chart-shell">
+									<canvas id="salesTrendChart" height="140"></canvas>
+								</div>
+								<?php if ((int) $salesSummary['receipts_week'] === 0): ?>
+									<p class="text-muted small mt-2 mb-0">No sales recorded in the last 7 days.</p>
+								<?php endif; ?>
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-4">
+						<div class="panel-card p-3" style="animation-delay: 0.25s;">
+							<div class="card-body">
+								<h2 class="h5 mb-3">Stock Status</h2>
+								<div class="chart-shell">
+									<canvas id="stockStatusChart" height="220"></canvas>
+								</div>
+								<div class="status-list">
+									<div><span class="dot dot-good"></span>In Stock: <?= esc((string) $summary['in_stock']) ?></div>
+									<div><span class="dot dot-warn"></span>Low Stock: <?= esc((string) $summary['low_stock']) ?></div>
+									<div><span class="dot dot-bad"></span>Out of Stock: <?= esc((string) $summary['out_of_stock']) ?></div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-bar-chart fs-3 text-info mb-3"></i>
-							<h6 class="card-title">Net Income</h6>
-							<p class="card-text text-muted small">Revenue - Expenses</p>
+			</section>
+
+			<section class="mb-5">
+				<div class="row g-4">
+					<div class="col-lg-6">
+						<div class="panel-card p-3" style="animation-delay: 0.3s;">
+							<div class="card-body">
+								<h2 class="h5 mb-3">Low Stock Spotlight</h2>
+								<?php if ($lowStockItems === []): ?>
+									<p class="text-muted mb-0">All tracked items are healthy today.</p>
+								<?php else: ?>
+									<div class="table-responsive">
+										<table class="table table-sm align-middle mb-0">
+											<thead>
+												<tr>
+													<th>Item</th>
+													<th class="text-end">Qty</th>
+													<th class="text-end">Min</th>
+												</tr>
+											</thead>
+											<tbody>
+												<?php foreach ($lowStockItems as $item): ?>
+													<tr>
+														<td><?= esc((string) ($item['name'] ?? '')) ?></td>
+														<td class="text-end"><?= esc((string) ((int) ($item['stock_quantity'] ?? 0))) ?></td>
+														<td class="text-end"><?= esc((string) ((int) ($item['minimum_stock'] ?? 0))) ?></td>
+													</tr>
+												<?php endforeach; ?>
+											</tbody>
+										</table>
+									</div>
+								<?php endif; ?>
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<div class="panel-card p-3" style="animation-delay: 0.35s;">
+							<div class="card-body">
+								<h2 class="h5 mb-3">Recent Receipts</h2>
+								<?php if ($recentReceipts === []): ?>
+									<p class="text-muted mb-0">No sales recorded yet.</p>
+								<?php else: ?>
+									<div class="table-responsive">
+										<table class="table table-sm align-middle mb-0">
+											<thead>
+												<tr>
+													<th>Receipt</th>
+													<th class="text-end">Amount</th>
+													<th class="text-end">Date</th>
+												</tr>
+											</thead>
+											<tbody>
+												<?php foreach ($recentReceipts as $receipt): ?>
+													<?php
+														$receiptDate = (string) ($receipt['created_at'] ?? '');
+														$timestamp = $receiptDate !== '' ? strtotime($receiptDate) : false;
+														$receiptLabel = $timestamp ? date('M j, Y g:i A', $timestamp) : '-';
+													?>
+													<tr>
+														<td><?= esc((string) ($receipt['receipt_number'] ?? '')) ?></td>
+														<td class="text-end">PHP <?= esc(number_format((float) ($receipt['total_amount'] ?? 0), 2)) ?></td>
+														<td class="text-end text-muted small"><?= esc($receiptLabel) ?></td>
+													</tr>
+												<?php endforeach; ?>
+											</tbody>
+										</table>
+									</div>
+								<?php endif; ?>
+							</div>
 						</div>
 					</div>
 				</div>
-				<div class="col-md-6 col-lg-3">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-pie-chart fs-3 text-warning mb-3"></i>
-							<h6 class="card-title">Financial Reports</h6>
-							<p class="card-text text-muted small">Comprehensive reports</p>
-						</div>
-					</div>
+			</section>
+
+			<?php endif; ?>
+			<section class="mb-5">
+				<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+					<h2 class="h5 mb-0"><?= esc($quickActionsTitle) ?></h2>
+					<span class="text-muted small"><?= esc($quickActionsHint) ?></span>
 				</div>
+				<div class="row g-3">
+					<?php foreach ($visibleActions as $action): ?>
+						<div class="col-md-6 col-lg-4">
+							<a href="<?= esc(base_url((string) $action['path'])) ?>" class="action-card">
+								<div class="action-icon"><i class="bi <?= esc($action['icon']) ?>"></i></div>
+								<div>
+									<div class="action-title"><?= esc($action['label']) ?></div>
+									<div class="action-subtext">Open module</div>
+								</div>
+							</a>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</section>
+		</main>
+	</div>
+</div>
+
+<?php if ($role === 'Owner' && $lowStockCount > 0): ?>
+	<div class="position-fixed end-0 p-3" style="z-index: 1090; bottom: 3.75rem;">
+		<div id="lowStockToast" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+			<div class="d-flex">
+				<div class="toast-body text-dark fw-semibold">
+					Low Stock Alert: <?= esc((string) $lowStockCount) ?> product<?= $lowStockCount > 1 ? 's are' : ' is' ?> currently low on stock.
+				</div>
+				<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
 			</div>
-		</section>
-			</main>
 		</div>
 	</div>
-    <?php elseif(session()->get('role') == 'Employee'): ?>
-        <div class="dashboard-shell">
-		<div class="sidebar-overlay d-lg-none"></div>
-		<div class="dashboard-main">
-			<main class="content-area px-3 px-lg-4 py-4 py-lg-5">
-				<button class="btn btn-outline-primary mb-3 d-lg-none sidebar-toggle" id="sidebarToggle">
-					<i class="bi bi-list"></i> Menu
-				</button>
-		<section class="dashboard-hero mb-5">
-			<div class="row align-items-center">
-				<div class="col-lg-8">
-					<p class="text-uppercase small text-muted mb-1">Today • <?= esc(date('l, F j')) ?></p>
-					<h1 class="display-6 fw-semibold mb-3">Welcome back, <?= esc($firstName) ?></h1>
-				</div>
-			</div>
-		</section>
+<?php endif; ?>
 
-		<!-- Daily Operations Section -->
-		<section class="mb-5">
-			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-clipboard-check text-primary me-2"></i>Daily Operations</h2>
-			<div class="row g-3">
-				<div class="col-md-6 col-lg-4">
-					<a href="<?= base_url('stock-out/cashier') ?>" class="text-decoration-none text-reset d-block h-100">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-cart-plus fs-3 text-success mb-3"></i>
-							<h6 class="card-title">Process Sales</h6>
-							<p class="card-text text-muted small">Handle customer transactions</p>
-						</div>
-					</div>
-					</a>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-receipt fs-3 text-primary mb-3"></i>
-							<h6 class="card-title">Generate Receipts</h6>
-							<p class="card-text text-muted small">Print customer receipts</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-credit-card fs-3 text-info mb-3"></i>
-							<h6 class="card-title">Payment Processing</h6>
-							<p class="card-text text-muted small">Accept various payment methods</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- Inventory Tasks Section -->
-		<section class="mb-5">
-			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-boxes text-primary me-2"></i>Inventory Tasks</h2>
-			<div class="row g-3">
-				<div class="col-md-6 col-lg-4">
-					<a href="<?= base_url('stockin') ?>" class="text-decoration-none text-reset d-block h-100">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-arrow-down-circle fs-3 text-success mb-3"></i>
-							<h6 class="card-title">Stock In</h6>
-							<p class="card-text text-muted small">Record incoming inventory</p>
-						</div>
-					</div>
-					</a>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<a href="<?= base_url('stock-levels') ?>" class="text-decoration-none text-reset d-block h-100">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-eye fs-3 text-primary mb-3"></i>
-							<h6 class="card-title">Check Stock Levels</h6>
-							<p class="card-text text-muted small">Monitor product availability</p>
-						</div>
-					</div>
-					</a>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<a href="<?= base_url('stock-levels?status=low_stock') ?>" class="text-decoration-none text-reset d-block h-100">
-					<div class="card h-100 border-0 shadow-sm position-relative">
-						<div class="card-body text-center position-relative">
-							<?php if ($lowStockCount > 0): ?>
-								<span class="badge bg-danger low-stock-card-badge"><?= esc((string) $lowStockCount) ?></span>
-							<?php endif; ?>
-							<i class="bi bi-exclamation-triangle fs-3 text-warning mb-3"></i>
-							<h6 class="card-title">Low Stock Alerts</h6>
-							<p class="card-text text-muted small">Check items running low</p>
-						</div>
-					</div>
-					</a>
-				</div>
-			</div>
-			<div class="row g-3 mt-2">
-				<div class="col-md-6">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-gear fs-3 text-danger mb-3"></i>
-							<h6 class="card-title">Stock Adjustments</h6>
-							<p class="card-text text-muted small">Report damaged or expired items</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-upc-scan fs-3 text-info mb-3"></i>
-							<h6 class="card-title">Barcode Scanner</h6>
-							<p class="card-text text-muted small">Quick product lookup</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- Customer Service Section -->
-		<section class="mb-5">
-			<h2 class="h4 fw-semibold mb-4"><i class="bi bi-people text-primary me-2"></i>Customer Service</h2>
-			<div class="row g-3">
-				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-arrow-counterclockwise fs-3 text-warning mb-3"></i>
-							<h6 class="card-title">Returns & Refunds</h6>
-							<p class="card-text text-muted small">Process customer returns</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-clock-history fs-3 text-info mb-3"></i>
-							<h6 class="card-title">Credit Tracking</h6>
-							<p class="card-text text-muted small">Monitor credit sales</p>
-						</div>
-					</div>
-				</div>
-				<div class="col-md-6 col-lg-4">
-					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body text-center">
-							<i class="bi bi-question-circle fs-3 text-secondary mb-3"></i>
-							<h6 class="card-title">Product Info</h6>
-							<p class="card-text text-muted small">Help customers find products</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-			</main>
-		</div>
-	</div>
-    <?php endif; ?>
-
-	<?php if ($lowStockCount > 0): ?>
-		<div class="position-fixed end-0 p-3" style="z-index: 1090; bottom: 3.75rem;">
-			<div id="lowStockToast" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
-				<div class="d-flex">
-					<div class="toast-body text-dark fw-semibold">
-						Low Stock Alert: <?= esc((string) $lowStockCount) ?> product<?= $lowStockCount > 1 ? 's are' : ' is' ?> currently low on stock.
-					</div>
-					<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-				</div>
-			</div>
-		</div>
-	<?php endif; ?>
-
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-	<script>
-		document.addEventListener('DOMContentLoaded', () => {
-			const body = document.body;
-			const toggleBtn = document.getElementById('sidebarToggle');
-			const overlay = document.querySelector('.sidebar-overlay');
-			const sidebarLinks = document.querySelectorAll('.sidebar .sidebar-link');
-
-			const closeSidebar = () => body.classList.remove('sidebar-open');
-
-			if (toggleBtn) {
-				toggleBtn.addEventListener('click', () => body.classList.toggle('sidebar-open'));
-			}
-
-			if (overlay) {
-				overlay.addEventListener('click', closeSidebar);
-			}
-
-			const lowStockToastEl = document.getElementById('lowStockToast');
-			if (lowStockToastEl && window.bootstrap && window.bootstrap.Toast) {
-				const lowStockToast = new window.bootstrap.Toast(lowStockToastEl);
-				lowStockToast.show();
-			}
-
-			sidebarLinks.forEach(link => link.addEventListener('click', closeSidebar));
-		});
-	</script>
-	<style>
-		.low-stock-card-badge {
-			position: absolute;
-			top: 0.65rem;
-			right: 0.75rem;
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+	document.addEventListener('DOMContentLoaded', () => {
+		if (window.Chart) {
+			Chart.defaults.font.family = 'Manrope, Segoe UI, sans-serif';
+			Chart.defaults.color = '#475569';
 		}
-	</style>
+
+		const salesTrend = <?= json_encode($salesTrend, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+		const salesLabels = Array.isArray(salesTrend.labels) ? salesTrend.labels : [];
+		const salesValues = Array.isArray(salesTrend.values) ? salesTrend.values : [];
+		const salesCanvas = document.getElementById('salesTrendChart');
+
+		if (salesCanvas && window.Chart) {
+			const ctx = salesCanvas.getContext('2d');
+			const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+			gradient.addColorStop(0, 'rgba(14, 165, 233, 0.35)');
+			gradient.addColorStop(1, 'rgba(14, 165, 233, 0.02)');
+
+			new Chart(salesCanvas, {
+				type: 'line',
+				data: {
+					labels: salesLabels,
+					datasets: [
+						{
+							label: 'Revenue',
+							data: salesValues,
+							borderColor: '#0ea5e9',
+							backgroundColor: gradient,
+							fill: true,
+							tension: 0.35,
+							pointRadius: 3,
+							pointBackgroundColor: '#0ea5e9',
+						}
+					]
+				},
+				options: {
+					maintainAspectRatio: false,
+					plugins: {
+						legend: {
+							display: false
+						},
+						tooltip: {
+							callbacks: {
+								label: (ctx) => `PHP ${Number(ctx.parsed.y || 0).toLocaleString()}`
+							}
+						}
+					},
+					scales: {
+						y: {
+							ticks: {
+								callback: (value) => `PHP ${Number(value).toLocaleString()}`
+							},
+							grid: {
+								color: 'rgba(148, 163, 184, 0.2)'
+							}
+						},
+						x: {
+							grid: {
+								display: false
+							}
+						}
+					}
+				}
+			});
+		}
+
+		const stockCanvas = document.getElementById('stockStatusChart');
+		const stockStatus = [
+			<?= (int) ($summary['in_stock'] ?? 0) ?>,
+			<?= (int) ($summary['low_stock'] ?? 0) ?>,
+			<?= (int) ($summary['out_of_stock'] ?? 0) ?>
+		];
+
+		if (stockCanvas && window.Chart) {
+			new Chart(stockCanvas, {
+				type: 'doughnut',
+				data: {
+					labels: ['In Stock', 'Low Stock', 'Out of Stock'],
+					datasets: [
+						{
+							data: stockStatus,
+							backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
+							borderWidth: 0,
+						}
+					]
+				},
+				options: {
+					cutout: '70%',
+					plugins: {
+						legend: {
+							display: false
+						}
+					}
+				}
+			});
+		}
+
+		const lowStockToastEl = document.getElementById('lowStockToast');
+		if (lowStockToastEl && window.bootstrap && window.bootstrap.Toast) {
+			const lowStockToast = new window.bootstrap.Toast(lowStockToastEl);
+			lowStockToast.show();
+		}
+	});
+</script>
+
+<style>
+	@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+
+	.analytics-dashboard {
+		--ink: #0f172a;
+		--muted: #64748b;
+		--brand: #0ea5e9;
+		--accent: #10b981;
+		--card: #ffffff;
+		--stroke: rgba(15, 23, 42, 0.08);
+		--glow: rgba(14, 165, 233, 0.15);
+		font-family: 'Manrope', 'Segoe UI', sans-serif;
+		color: var(--ink);
+	}
+
+	.analytics-dashboard h1,
+	.analytics-dashboard h2,
+	.analytics-dashboard h3,
+	.analytics-dashboard .metric-label,
+	.analytics-dashboard .action-title {
+		font-family: 'Space Grotesk', 'Manrope', sans-serif;
+	}
+
+	.analytics-dashboard .content-area {
+		position: relative;
+	}
+
+	.analytics-dashboard .content-area::before {
+		content: '';
+		position: absolute;
+		inset: -2rem -2rem auto -2rem;
+		height: 45vh;
+		background: transparent;
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	.analytics-dashboard .content-area > * {
+		position: relative;
+		z-index: 1;
+	}
+
+	.analytics-dashboard .dashboard-hero {
+		background: transparent;
+		border: none;
+		border-radius: 26px;
+		padding: 2rem;
+		box-shadow: none;
+	}
+
+	.employee-hero .dashboard-hero {
+		position: relative;
+		overflow: hidden;
+		padding: 2.5rem;
+	}
+
+	.employee-hero .dashboard-hero::after {
+		content: '';
+		position: absolute;
+		width: 220px;
+		height: 220px;
+		right: -70px;
+		top: -80px;
+		border-radius: 999px;
+		background: transparent;
+		pointer-events: none;
+	}
+
+	.mini-stat-card {
+		border-radius: 18px;
+		border: 1px solid rgba(16, 185, 129, 0.2);
+		padding: 1.6rem;
+		background: rgba(216, 250, 239, 0.8);
+		box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+		transition: all 0.2s ease;
+	}
+
+	.mini-stat-card:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+		border-color: rgba(16, 185, 129, 0.3);
+	}
+
+	.mini-stat-icon {
+		width: 42px;
+		height: 42px;
+		border-radius: 12px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.2rem;
+		flex-shrink: 0;
+	}
+
+	.mini-stat-card .mini-stat-icon {
+		background: rgba(16, 185, 129, 0.25);
+		color: #059669;
+	}
+
+	.mini-stat-warn .mini-stat-icon {
+		background: rgba(245, 158, 11, 0.25);
+		color: #d97706;
+	}
+
+	.mini-stat-danger .mini-stat-icon {
+		background: rgba(244, 63, 94, 0.25);
+		color: #e11d48;
+	}
+
+	.mini-stat-label {
+		font-size: 0.76rem;
+		text-transform: uppercase;
+		letter-spacing: 0.09em;
+		font-weight: 700;
+		color: #64748b;
+		margin-bottom: 0.3rem;
+	}
+
+	.mini-stat-value {
+		font-family: 'Space Grotesk', 'Manrope', sans-serif;
+		font-size: 1.6rem;
+		font-weight: 700;
+		color: #0f172a;
+		line-height: 1.1;
+	}
+
+	.mini-stat-warn {
+		border-color: rgba(245, 158, 11, 0.2);
+		background: rgba(254, 243, 199, 0.8);
+	}
+
+	.mini-stat-warn:hover {
+		border-color: rgba(245, 158, 11, 0.3);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+	}
+
+	.mini-stat-danger {
+		border-color: rgba(244, 63, 94, 0.2);
+		background: rgba(255, 228, 230, 0.8);
+	}
+
+	.mini-stat-danger:hover {
+		border-color: rgba(244, 63, 94, 0.3);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+	}
+
+	.employee-note {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.65rem;
+		padding: 0.75rem 0.9rem;
+		border-radius: 12px;
+		background: rgba(14, 165, 233, 0.08);
+		color: #0f172a;
+		font-size: 0.88rem;
+	}
+
+	.employee-note i {
+		color: #0284c7;
+		font-size: 1rem;
+		line-height: 1.1;
+	}
+
+	.sales-card {
+		border-radius: 18px;
+		border: 1px solid rgba(148, 163, 184, 0.15);
+		padding: 1.6rem;
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 249, 255, 0.5) 100%);
+		box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+		animation: rise 0.7s ease both;
+	}
+
+	.sales-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 12px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(16, 185, 129, 0.15);
+		color: #059669;
+		font-size: 1.25rem;
+	}
+
+	.sales-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.4rem 0.8rem;
+		border-radius: 999px;
+		background: rgba(16, 185, 129, 0.12);
+		color: #059669;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.sales-label {
+		font-size: 0.82rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-weight: 700;
+		color: #64748b;
+		margin-bottom: 0.5rem;
+		margin-top: 0.8rem;
+	}
+
+	.sales-value {
+		font-family: 'Space Grotesk', 'Manrope', sans-serif;
+		font-size: 2rem;
+		font-weight: 700;
+		color: #0f172a;
+		line-height: 1.1;
+		margin-bottom: 0.3rem;
+	}
+
+	.sales-subtext {
+		font-size: 0.85rem;
+		color: #64748b;
+	}
+
+	.role-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.6rem 1rem;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.8);
+		border: 1px solid rgba(148, 163, 184, 0.2);
+		font-weight: 600;
+		color: var(--ink);
+		backdrop-filter: blur(8px);
+	}
+
+	.metric-card {
+		background: var(--card);
+		border-radius: 22px;
+		padding: 1.5rem;
+		border: 1px solid var(--stroke);
+		box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+		position: relative;
+		overflow: hidden;
+		animation: rise 0.7s ease both;
+	}
+
+	.metric-card::after {
+		content: '';
+		position: absolute;
+		inset: 60% -20% auto auto;
+		width: 140px;
+		height: 140px;
+		background: radial-gradient(circle, var(--glow), transparent 70%);
+		opacity: 0.7;
+		pointer-events: none;
+	}
+
+	.metric-label {
+		color: var(--muted);
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		margin-bottom: 0.35rem;
+	}
+
+	.metric-value {
+		font-size: 1.6rem;
+		font-weight: 600;
+		color: var(--ink);
+	}
+
+	.metric-subtext {
+		color: var(--muted);
+		font-size: 0.85rem;
+	}
+
+	.metric-icon {
+		width: 46px;
+		height: 46px;
+		border-radius: 16px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(14, 165, 233, 0.12);
+		color: #0284c7;
+		font-size: 1.2rem;
+	}
+
+	.metric-icon-warning {
+		background: rgba(245, 158, 11, 0.15);
+		color: #d97706;
+	}
+
+	.metric-icon-danger {
+		background: rgba(244, 63, 94, 0.15);
+		color: #e11d48;
+	}
+
+	.metric-icon-accent {
+		background: rgba(16, 185, 129, 0.15);
+		color: #059669;
+	}
+
+	.panel-card {
+		border-radius: 22px;
+		border: 1px solid var(--stroke);
+		box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+		background: var(--card);
+		animation: rise 0.7s ease both;
+	}
+
+	.chart-shell {
+		height: 220px;
+		position: relative;
+	}
+
+	.status-list {
+		display: grid;
+		gap: 0.35rem;
+		font-size: 0.85rem;
+		color: var(--muted);
+		margin-top: 1rem;
+	}
+
+	.status-list .dot {
+		display: inline-block;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		margin-right: 0.4rem;
+	}
+
+	.dot-good {
+		background: #10b981;
+	}
+
+	.dot-warn {
+		background: #f59e0b;
+	}
+
+	.dot-bad {
+		background: #f43f5e;
+	}
+
+	.action-card {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1.4rem;
+		border-radius: 18px;
+		border: 1px solid rgba(148, 163, 184, 0.15);
+		background: #ffffff;
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+		text-decoration: none;
+		color: inherit;
+		transition: all 0.2s ease;
+		animation: rise 0.7s ease both;
+	}
+
+	.action-card:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+		border-color: rgba(14, 165, 233, 0.3);
+	}
+
+	.action-icon {
+		width: 50px;
+		height: 50px;
+		border-radius: 14px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(14, 165, 233, 0.12);
+		color: #0284c7;
+		font-size: 1.35rem;
+		flex-shrink: 0;
+	}
+
+	.action-title {
+		font-size: 1.05rem;
+		font-weight: 600;
+		margin-bottom: 0.2rem;
+	}
+
+	.action-subtext {
+		font-size: 0.85rem;
+		color: var(--muted);
+	}
+
+	.low-stock-card-badge {
+		position: absolute;
+		top: 0.65rem;
+		right: 0.75rem;
+	}
+
+	@keyframes rise {
+		from {
+			opacity: 0;
+			transform: translateY(12px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (max-width: 991px) {
+		.chart-shell {
+			height: 200px;
+		}
+
+		.employee-hero .dashboard-hero {
+			padding: 1.4rem;
+		}
+	}
+</style>

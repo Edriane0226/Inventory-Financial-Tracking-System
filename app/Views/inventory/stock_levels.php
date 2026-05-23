@@ -18,16 +18,6 @@ $products = $products ?? [];
                 <i class="bi bi-list"></i> Menu
             </button>
 
-            <section class="dashboard-hero mb-4">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <div>
-                        <p class="text-uppercase small text-muted mb-1">Inventory Monitoring</p>
-                        <h1 class="display-6 fw-semibold mb-2">Stock Levels</h1>
-                        <p class="text-muted mb-0">Track product availability, identify low stock quickly, and prioritize restocking.</p>
-                    </div>
-                </div>
-            </section>
-
             <section class="mb-4">
                 <div class="row g-3">
                     <div class="col-sm-6 col-lg-3">
@@ -157,21 +147,20 @@ $products = $products ?? [];
         </main>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const body = document.body;
         const toggleBtn = document.getElementById('sidebarToggle');
         const overlay = document.querySelector('.sidebar-overlay');
+        const hasSidebar = document.querySelector('.sidebar') !== null;
 
         const closeSidebar = () => body.classList.remove('sidebar-open');
 
-        if (toggleBtn) {
+        if (toggleBtn && hasSidebar) {
             toggleBtn.addEventListener('click', () => body.classList.toggle('sidebar-open'));
         }
 
-        if (overlay) {
+        if (overlay && hasSidebar) {
             overlay.addEventListener('click', closeSidebar);
         }
     });

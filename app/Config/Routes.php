@@ -35,6 +35,7 @@ $routes->get('stock-out/barcode/(:any)', 'StockOutController::findByBarcode/$1')
 
 $routes->get('financial', 'FinancialAnalyticsController::index');
 $routes->get('financial/export-csv', 'FinancialAnalyticsController::exportMonthlyCsv');
+$routes->get('financial/breakdown', 'FinancialAnalyticsController::breakdown');
 $routes->get('financial/expenses', 'FinancialAnalyticsController::expenses');
 $routes->post('financial/bills/create', 'FinancialAnalyticsController::createBill');
 $routes->post('financial/bills/update/(:num)', 'FinancialAnalyticsController::updateBill/$1');
@@ -45,3 +46,7 @@ $routes->post('financial/expenses/delete/(:num)', 'FinancialAnalyticsController:
 $routes->post('financial/categories/create', 'FinancialAnalyticsController::createCategory');
 $routes->post('financial/categories/update/(:num)', 'FinancialAnalyticsController::updateCategory/$1');
 $routes->post('financial/categories/delete/(:num)', 'FinancialAnalyticsController::deleteCategory/$1');
+
+$routes->get('management/audit-trail', 'AuditTrailController::index');
+$routes->get('management/audit-trail/export-csv', 'AuditTrailController::exportCsv');
+$routes->get('management/audit-trail/export-pdf', 'AuditTrailController::exportPdf');

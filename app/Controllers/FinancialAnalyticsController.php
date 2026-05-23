@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\Bill;
+use App\Models\ProductExpense;
 
 class FinancialAnalyticsController extends BaseController
 {
@@ -73,37 +75,52 @@ class FinancialAnalyticsController extends BaseController
             return $guard;
         }
 
-        $filters = [
-            'category_id' => (int) ($this->request->getGet('category_id') ?? 0),
-            'keyword' => trim((string) ($this->request->getGet('keyword') ?? '')),
+        $activeTab = trim((string) ($this->request->getGet('tab') ?? 'bills'));
+        if (!in_array($activeTab, ['bills', 'product-expenses'], true)) {
+            $activeTab = 'bills';
+        }
+
+        $billFilters = [
+            'status' => trim((string) ($this->request->getGet('status') ?? '')),
             'from_date' => trim((string) ($this->request->getGet('from_date') ?? '')),
             'to_date' => trim((string) ($this->request->getGet('to_date') ?? '')),
+            'keyword' => trim((string) ($this->request->getGet('keyword') ?? '')),
         ];
 
-        $expenseModel = new Expense();
-        $query = $expenseModel->select('expenses.*, expense_categories.name AS category_name')
-            ->join('expense_categories', 'expense_categories.id = expenses.category_id', 'left');
+        $db = db_connect();
 
-        if ($filters['category_id'] > 0) {
-            $query->where('expenses.category_id', $filters['category_id']);
-        }
-        if ($filters['keyword'] !== '') {
-            $query->like('expenses.note', $filters['keyword']);
-        }
-        if ($filters['from_date'] !== '') {
-            $query->where('expenses.expense_date >=', $filters['from_date'] . ' 00:00:00');
-        }
-        if ($filters['to_date'] !== '') {
-            $query->where('expenses.expense_date <=', $filters['to_date'] . ' 23:59:59');
+        $bills = [];
+        if ($db->tableExists('bills')) {
+            $billQuery = (new Bill())->orderBy('bill_date', 'DESC');
+            if ($billFilters['status'] !== '') {
+                $billQuery->where('status', $billFilters['status']);
+            }
+            if ($billFilters['from_date'] !== '') {
+                $billQuery->where('bill_date >=', $billFilters['from_date']);
+            }
+            if ($billFilters['to_date'] !== '') {
+                $billQuery->where('bill_date <=', $billFilters['to_date']);
+            }
+            if ($billFilters['keyword'] !== '') {
+                $billQuery->groupStart()
+                    ->like('bill_name', $billFilters['keyword'])
+                    ->orLike('notes', $billFilters['keyword'])
+                    ->groupEnd();
+            }
+
+            $bills = $billQuery->findAll();
         }
 
-        $expenses = $query->orderBy('expenses.expense_date', 'DESC')->findAll();
-        $categories = (new ExpenseCategory())->orderBy('name', 'ASC')->findAll();
+        $productExpenses = [];
+        if ($db->tableExists('product_expenses')) {
+            $productExpenses = (new ProductExpense())->orderBy('expense_date', 'DESC')->findAll();
+        }
 
         return view('Reusables/menu') . view('financial/expenses', [
-            'expenses' => $expenses,
-            'categories' => $categories,
-            'filters' => $filters,
+            'bills' => $bills,
+            'productExpenses' => $productExpenses,
+            'billFilters' => $billFilters,
+            'activeTab' => $activeTab,
         ]);
     }
 
@@ -139,6 +156,88 @@ class FinancialAnalyticsController extends BaseController
         }
 
         return redirect()->to('/financial/expenses')->with('success', 'Expense recorded successfully.');
+    }
+
+    public function createBill()
+    {
+        $guard = $this->requireOwner();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $isValid = $this->validate([
+            'bill_name' => 'required|max_length[150]',
+            'amount' => 'required|decimal|greater_than[0]',
+            'bill_date' => 'required|valid_date[Y-m-d]',
+            'due_date' => 'required|valid_date[Y-m-d]',
+            'status' => 'required|in_list[paid,unpaid]',
+            'notes' => 'permit_empty|max_length[255]',
+        ]);
+        if (!$isValid) {
+            return redirect()->to('/financial/expenses')->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $inserted = (new Bill())->insert([
+            'bill_name' => trim((string) $this->request->getPost('bill_name')),
+            'amount' => (float) $this->request->getPost('amount'),
+            'bill_date' => (string) $this->request->getPost('bill_date'),
+            'due_date' => (string) $this->request->getPost('due_date'),
+            'status' => (string) $this->request->getPost('status'),
+            'notes' => trim((string) $this->request->getPost('notes')),
+            'recorded_by' => (int) (session()->get('user_id') ?? 0),
+        ]);
+
+        if ($inserted === false) {
+            return redirect()->to('/financial/expenses')->withInput()->with('error', 'Could not save bill.');
+        }
+
+        return redirect()->to('/financial/expenses')->with('success', 'Bill saved successfully.');
+    }
+
+    public function updateBill(int $id)
+    {
+        $guard = $this->requireOwner();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $isValid = $this->validate([
+            'bill_name' => 'required|max_length[150]',
+            'amount' => 'required|decimal|greater_than[0]',
+            'bill_date' => 'required|valid_date[Y-m-d]',
+            'due_date' => 'required|valid_date[Y-m-d]',
+            'status' => 'required|in_list[paid,unpaid]',
+            'notes' => 'permit_empty|max_length[255]',
+        ]);
+        if (!$isValid) {
+            return redirect()->to('/financial/expenses')->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $updated = (new Bill())->update($id, [
+            'bill_name' => trim((string) $this->request->getPost('bill_name')),
+            'amount' => (float) $this->request->getPost('amount'),
+            'bill_date' => (string) $this->request->getPost('bill_date'),
+            'due_date' => (string) $this->request->getPost('due_date'),
+            'status' => (string) $this->request->getPost('status'),
+            'notes' => trim((string) $this->request->getPost('notes')),
+        ]);
+
+        if ($updated === false) {
+            return redirect()->to('/financial/expenses')->withInput()->with('error', 'Could not update bill.');
+        }
+
+        return redirect()->to('/financial/expenses')->with('success', 'Bill updated successfully.');
+    }
+
+    public function deleteBill(int $id)
+    {
+        $guard = $this->requireOwner();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        (new Bill())->delete($id);
+        return redirect()->to('/financial/expenses')->with('success', 'Bill deleted successfully.');
     }
 
     public function updateExpense(int $id)
@@ -286,7 +385,7 @@ class FinancialAnalyticsController extends BaseController
     private function buildMetrics(string $from, string $to): array
     {
         $revenue = $this->sumRevenue($from, $to);
-        $expenses = $this->sumExpenses($from, $to);
+        $expenses = $this->sumPaidBills($from, $to) + $this->sumProductExpenses($from, $to);
         $netIncome = $revenue - $expenses;
         $profitMargin = $revenue > 0 ? round(($netIncome / $revenue) * 100, 2) : 0.0;
 
@@ -315,21 +414,39 @@ class FinancialAnalyticsController extends BaseController
         return (float) ($row['total_revenue'] ?? 0);
     }
 
-    private function sumExpenses(string $from, string $to): float
+    private function sumPaidBills(string $from, string $to): float
     {
         $db = db_connect();
-        if (!$db->tableExists('expenses')) {
+        if (!$db->tableExists('bills')) {
             return 0.0;
         }
 
-        $row = $db->table('expenses')
-            ->select('COALESCE(SUM(amount), 0) AS total_expenses')
+        $row = $db->table('bills')
+            ->select('COALESCE(SUM(amount), 0) AS total_paid_bills')
+            ->where('status', 'paid')
+            ->where('bill_date >=', substr($from, 0, 10))
+            ->where('bill_date <=', substr($to, 0, 10))
+            ->get()
+            ->getRowArray();
+
+        return (float) ($row['total_paid_bills'] ?? 0);
+    }
+
+    private function sumProductExpenses(string $from, string $to): float
+    {
+        $db = db_connect();
+        if (!$db->tableExists('product_expenses')) {
+            return 0.0;
+        }
+
+        $row = $db->table('product_expenses')
+            ->select('COALESCE(SUM(amount), 0) AS total_product_expenses')
             ->where('expense_date >=', $from)
             ->where('expense_date <=', $to)
             ->get()
             ->getRowArray();
 
-        return (float) ($row['total_expenses'] ?? 0);
+        return (float) ($row['total_product_expenses'] ?? 0);
     }
 
     private function requireOwner()

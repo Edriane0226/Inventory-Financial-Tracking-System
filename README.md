@@ -61,6 +61,9 @@ Additionally, make sure that the following extensions are enabled in your PHP:
 - [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
 - [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
 
+## Financial Analytics
+
+Financial Analytics uses two expense sources: paid bills and automatic product expenses from Stock-In capital entries. Product expenses are read-only and generated per new Stock-In transaction.
 ## Financial analytics
 
 Financial analytics draws from paid bills and automatic product expenses generated from stock-in capital entries. Product expenses are read-only and created per stock-in transaction.

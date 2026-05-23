@@ -147,6 +147,23 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 							</div>
 						</div>
 
+						<div class="mb-3 mt-3">
+							<label class="form-label" for="stockin_date">Stock In Date</label>
+							<input type="date" class="form-control" id="stockin_date" name="stockin_date" value="<?= esc(old('stockin_date', date('Y-m-d'))) ?>" required>
+						</div>
+
+						<div class="mb-3 p-3 bg-light rounded-3 border border-info">
+							<label class="form-label fw-semibold mb-2" for="barcode">
+								<i class="bi bi-barcode"></i> Barcode
+							</label>
+							<input type="text" class="form-control form-control-lg font-monospace" id="barcode" name="barcode" value="<?= esc(old('barcode')) ?>" readonly style="background-color: #fff; letter-spacing: 2px; font-weight: 500;">
+							<div class="barcode-preview-wrap mt-2 bg-white border rounded p-2 text-center">
+								<svg id="barcodePreview" class="barcode-svg" aria-label="Generated barcode preview"></svg>
+							</div>
+							<small class="text-muted d-block mt-2"><i class="bi bi-info-circle"></i> Generated on save using server-side EAN-13</small>
+						</div>
+
+						<button type="submit" class="btn btn-primary w-100 btn-lg">Save Stock In</button>
 						<button type="submit" class="btn btn-primary w-100 btn-lg mt-2">Save Stock In</button>
 					</form>
 				</div>
@@ -305,3 +322,61 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 		white-space: nowrap;
 	}
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>
+	const renderBarcodeSvg = (selector, value, options = {}) => {
+		const target = document.querySelector(selector);
+		if (!target || !value) {
+			return;
+		}
+
+		try {
+			JsBarcode(target, value, {
+				format: 'CODE128',
+				displayValue: true,
+				fontSize: 12,
+				textMargin: 2,
+				margin: 2,
+				lineColor: '#111827',
+				...options,
+			});
+		} catch (error) {
+			target.innerHTML = '';
+		}
+	};
+
+	const renderTableBarcodes = () => {
+		document.querySelectorAll('.table-barcode').forEach((svgEl) => {
+			const value = svgEl.getAttribute('data-barcode');
+			if (!value) {
+				return;
+			}
+
+			try {
+				JsBarcode(svgEl, value, {
+					format: 'CODE128',
+					displayValue: true,
+					fontSize: 10,
+					textMargin: 1,
+					margin: 1,
+					width: 1.1,
+					height: 24,
+					lineColor: '#111827',
+				});
+			} catch (error) {
+				svgEl.outerHTML = '<span class="text-muted">Invalid</span>';
+			}
+		});
+	};
+
+	// Render barcode preview on page load when a value is already present.
+	window.addEventListener('load', () => {
+		const barcodeField = document.getElementById('barcode');
+		const barcodeValue = (barcodeField?.value ?? '').trim();
+		if (barcodeValue !== '') {
+			renderBarcodeSvg('#barcodePreview', barcodeValue, { width: 1.4, height: 48 });
+		}
+		renderTableBarcodes();
+	});
+</script>

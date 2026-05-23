@@ -67,3 +67,7 @@ Additionally, make sure that the following extensions are enabled in your PHP:
 - json (enabled by default - don't turn it off)
 - [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
 - [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+
+## Stock-In Barcode Rules
+
+Stock-In now uses server-generated EAN-13 barcodes. A barcode is reused for the same product identity (`product_name + category + unit_type`) across all batches, while batch number and expiry stay separate for FIFO and expiration tracking.

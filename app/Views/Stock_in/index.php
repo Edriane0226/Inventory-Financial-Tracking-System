@@ -146,7 +146,7 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 							<div class="barcode-preview-wrap mt-2 bg-white border rounded p-2 text-center">
 								<svg id="barcodePreview" class="barcode-svg" aria-label="Generated barcode preview"></svg>
 							</div>
-							<small class="text-muted d-block mt-2"><i class="bi bi-info-circle"></i> Automatically generated from product details</small>
+							<small class="text-muted d-block mt-2"><i class="bi bi-info-circle"></i> Generated on save using server-side EAN-13</small>
 						</div>
 
 						<button type="submit" class="btn btn-primary w-100 btn-lg">Save Stock In</button>
@@ -310,26 +310,6 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 		}
 	};
 
-	// Auto-generate barcode when key fields are filled
-	const generateBarcode = () => {
-		const productName = document.getElementById('product_name').value;
-		const batchNumber = document.getElementById('batch_number').value;
-		const quantity = document.getElementById('quantity').value;
-		const barcodeField = document.getElementById('barcode');
-
-		if (productName && batchNumber && quantity) {
-			// Build a scanner-friendly alphanumeric code for CODE128 rendering.
-			const productCode = productName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase().padEnd(3, '0');
-			const batchCode = batchNumber.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase().padEnd(4, '0');
-			const timestamp = Date.now().toString().slice(-6);
-			const barcode = `${productCode}${batchCode}${timestamp}`;
-			barcodeField.value = barcode;
-			renderBarcodeSvg('#barcodePreview', barcode, { width: 1.4, height: 48 });
-		} else {
-			document.getElementById('barcodePreview').innerHTML = '';
-		}
-	};
-
 	const renderTableBarcodes = () => {
 		document.querySelectorAll('.table-barcode').forEach((svgEl) => {
 			const value = svgEl.getAttribute('data-barcode');
@@ -354,15 +334,13 @@ $displayStockIns = array_merge($stockInsInStock, $stockInsOutOfStock);
 		});
 	};
 
-	// Listen for input changes on relevant fields
-	document.getElementById('product_name').addEventListener('input', generateBarcode);
-	document.getElementById('batch_number').addEventListener('input', generateBarcode);
-	document.getElementById('quantity').addEventListener('input', generateBarcode);
-	document.getElementById('category').addEventListener('change', generateBarcode);
-
-	// Generate barcode on page load if form has old values
+	// Render barcode preview on page load when a value is already present.
 	window.addEventListener('load', () => {
-		generateBarcode();
+		const barcodeField = document.getElementById('barcode');
+		const barcodeValue = (barcodeField?.value ?? '').trim();
+		if (barcodeValue !== '') {
+			renderBarcodeSvg('#barcodePreview', barcodeValue, { width: 1.4, height: 48 });
+		}
 		renderTableBarcodes();
 	});
 </script>

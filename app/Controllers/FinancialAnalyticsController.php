@@ -309,7 +309,6 @@ class FinancialAnalyticsController extends BaseController
             return redirect()->to('/financial/expenses')->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $updated = (new Bill())->update($id, [
         $billModel = new Bill();
         $before = $billModel->find($id);
         $updated = $billModel->update($id, [
